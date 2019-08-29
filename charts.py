@@ -14,6 +14,10 @@ def setup_percentiles(percentiles):
   percentiles['P95'] = pd.to_numeric(percentiles['P95'], errors='coerce')
   percentiles['age'] = percentiles['Agemos'] / 12
   percentiles['Sex'] = pd.to_numeric(percentiles['Sex'], errors='coerce')
+  # Values by CDC (1=male; 2=female) differ from growthcleanr
+  # which uses a numeric value of 0 (male) or 1 (female).
+  # This aligns things to the growthcleanr values
+  percentiles['Sex'] = percentiles['Sex']  - 1
   return percentiles
 
 def setup_merged_df(obs_df):
@@ -37,9 +41,9 @@ def setup_merged_df(obs_df):
   clean_column_names['include_both'] = clean_column_names['include_height'] & clean_column_names['include_weight']
   return clean_column_names
 
-def bmi_stats(merged_df, out, include_min=True, include_mean=True, include_max=True,
+def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
               include_std=True, include_median=True, include_mean_diff=True,
-              include_count=True):
+              include_count=True, age_range=[2, 20]):
   agg_functions = []
   if include_min:
     agg_functions.append('min')
@@ -59,8 +63,12 @@ def bmi_stats(merged_df, out, include_min=True, include_mean=True, include_max=T
   merged_stats = clean_groups.merge(raw_groups, on=['rounded_age', 'sex'], suffixes=('_clean', '_raw'))
   if include_mean & include_mean_diff:
     merged_stats['mean_diff'] = merged_stats['mean_raw'] - merged_stats['mean_clean']
-  out.clear_output()
-  out.append_display_data(merged_stats)
+  age_filtered = merged_stats.loc[(age_range[0]):(age_range[1])]
+  if out == None:
+    return age_filtered
+  else:
+    out.clear_output()
+    out.append_display_data(age_filtered.style.format("{:.2f}"))
 
 def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df):
   individual = obs_df[obs_df.subjid == subjid]
