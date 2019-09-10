@@ -130,3 +130,17 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
         title='BMI Cleaned')
   ax[1].grid()
   return plt
+
+def top_ten(merged_df, field, age=None, sex=None, exclusion=None, order='largest'):
+  working_set = merged_df
+  if age != None:
+    working_set = working_set[working_set.rounded_age == age]
+  if sex != None:
+    working_set = working_set[working_set.sex == sex]
+  if exclusion != None:
+    working_set = working_set.loc[(working_set.height_cat == exclusion) | (working_set.weight_cat == exclusion)]
+  if order == 'largest':
+    working_set = working_set.nlargest(10, field)
+  else:
+    working_set = working_set.nsmallest(10, field)
+  return working_set.drop(columns=['id_x', 'agedays', 'include_height', 'include_weight', 'include_both'])
