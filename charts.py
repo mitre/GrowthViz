@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from IPython.display import FileLink, FileLinks
+
 
 def setup_individual_obs_df(obs_df):
   obs_df['clean_cat'] = obs_df['clean_value'].astype('category')
@@ -134,7 +136,7 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
 def top_ten(merged_df, field, age=None, sex=None, exclusion=None, order='largest'):
   working_set = merged_df
   if age != None:
-    working_set = working_set[working_set.rounded_age == age]
+    working_set = working_set.loc[working_set.rounded_age.ge(age[0]) & working_set.rounded_age.le(age[1])]
   if sex != None:
     working_set = working_set[working_set.sex == sex]
   if exclusion != None:
@@ -144,3 +146,16 @@ def top_ten(merged_df, field, age=None, sex=None, exclusion=None, order='largest
   else:
     working_set = working_set.nsmallest(10, field)
   return working_set.drop(columns=['id_x', 'agedays', 'include_height', 'include_weight', 'include_both'])
+
+def data_frame_names(da_locals):
+  frames = []
+  for key, value in da_locals.items():
+    if isinstance(value, pd.DataFrame):
+      frames.append(key)
+  return frames
+
+def export_to_csv(da_locals, selection_widget, out):
+  df_name = selection_widget.value
+  da_locals[df_name].to_csv('output/{}.csv'.format(df_name), index=False)
+  out.clear_output()
+  out.append_display_data(FileLinks('output'))
