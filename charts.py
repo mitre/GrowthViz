@@ -133,19 +133,22 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
   ax[1].grid()
   return plt
 
-def top_ten(merged_df, field, age=None, sex=None, exclusion=None, order='largest'):
+def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=None, order='largest', out=None):
   working_set = merged_df
   if age != None:
     working_set = working_set.loc[working_set.rounded_age.ge(age[0]) & working_set.rounded_age.le(age[1])]
   if sex != None:
     working_set = working_set[working_set.sex == sex]
-  if exclusion != None:
-    working_set = working_set.loc[(working_set.height_cat == exclusion) | (working_set.weight_cat == exclusion)]
+  if wexclusion != None:
+    working_set = working_set[working_set.weight_cat.isin(wexclusion)]
+  if hexclusion != None:
+    working_set = working_set[working_set.height_cat.isin(hexclusion)]
   if order == 'largest':
     working_set = working_set.nlargest(10, field)
   else:
     working_set = working_set.nsmallest(10, field)
-  return working_set.drop(columns=['id_x', 'agedays', 'include_height', 'include_weight', 'include_both'])
+  out.clear_output()
+  out.append_display_data(working_set.drop(columns=['id_x', 'agedays', 'include_height', 'include_weight', 'include_both']))
 
 def data_frame_names(da_locals):
   frames = []
