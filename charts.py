@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import FileLink, FileLinks
 
-
 def setup_individual_obs_df(obs_df):
   obs_df['clean_cat'] = obs_df['clean_value'].astype('category')
   obs_df['age'] = obs_df['agedays'] / 365
