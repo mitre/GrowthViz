@@ -45,6 +45,29 @@ def setup_merged_df(obs_df):
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
               include_std=True, include_median=True, include_mean_diff=True,
               include_count=True, age_range=[2, 20]):
+  """
+  Computes summary statistics for BMI. Clean values are for BMIs computed when both the height
+  and weight values are categorized by growthcleanr as "Include". Raw values are computed for
+  all observations. Information is provided by age and sex.
+
+  Parameters:
+  merged_df: (DataFrame) with bmi, rounded_age and sex columns
+  out: (ipywidgets.Output) to display the results, if provided
+  include_min: (Boolean) Whether to include the minimum value column
+  include_mean: (Boolean) Whether to include the mean value column
+  include_max: (Boolean) Whether to include the maximum value column
+  include_std: (Boolean) Whether to include the standard deviation column
+  include_median: (Boolean) Whether to include the median value column
+  include_mean_diff: (Boolean) Whether to include the difference between the raw and
+                     clean mean value column
+  include_count: (Boolean) Whether to include the count column
+  age_range (List) Two elements containing the minimum and maximum ages that should be
+            included in the statistics
+
+  Returns:
+  If out is None, it will return a DataFrame. If out is provided, results will be displayed
+  in the notebook.
+  """
   agg_functions = []
   if include_min:
     agg_functions.append('min')
@@ -72,6 +95,23 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
     out.append_display_data(age_filtered.style.format("{:.2f}"))
 
 def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df):
+  """
+  Creates a chart showing the trajectory for an individual with all values present. All values will
+  be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
+  shows the resulting trajectory when excluded values are removed.
+
+  Parameters:
+  obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+  subjid: (String) Id of the individuals to be plotted
+  param: (String) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
+  include_carry_forward: (Boolean) If True, it will show carry forward values as a triangle and the
+                         yellow dashed line will include carry forward values. If False, carry
+                         forwards are excluded and will be shown as red x's.
+  include_percentiles: (Boolean) Controls whether the 5th and 95th percentile bands are displayed
+                       on the chart
+  wt_df: (DataFrame) with the CDC growth charts by age for weight
+  ht_df: (DataFrame) with the CDC growth charts by age for height
+  """
   individual = obs_df[obs_df.subjid == subjid]
   selected_param = individual[individual.param == param]
   filter = selected_param.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
@@ -95,11 +135,20 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
     selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
   return selected_param_plot
 
-def four_by_four_view(obs_df, subjids, param):
-  fig, ax = plt.subplots(4, 4)
-  for y in range(4):
-    for x in range(4):
-      subjid = subjids[x + y*4]
+def five_by_five_view(obs_df, subjids, param):
+  """
+  Creates a small multiples plot showing the growth trend for 25 individuals
+
+  Parameters:
+  obs_df: (DataFrame) with subjid, measurement, param and clean_value columns
+  subjids: An list of the ids of the individuals to be plotted
+  param: (String) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
+  """
+
+  fig, ax = plt.subplots(5, 5)
+  for y in range(5):
+    for x in range(5):
+      subjid = subjids[x + y*5]
       individual = obs_df[obs_df.subjid == subjid]
       selected_param = individual[individual.param == param]
       ax[x, y].plot(selected_param.age, selected_param.measurement, marker='.')
@@ -110,6 +159,17 @@ def four_by_four_view(obs_df, subjids, param):
   return plt
 
 def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
+  """
+  Displays two charts showing BMI trajectory. The chart on the left will include all
+  values, while the chart on the right will only show values categorized as "Include"
+  by growthcleanr.
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+             and sex columns
+  bmi_percentiles: (DataFrame) CDC growth chart containing BMI percentiles for age
+  subjid: (String) Id of the individual to plot
+  """
   individual = merged_df[merged_df.subjid == subjid]
   fig, ax = plt.subplots(1, 2)
   percentile_window = bmi_percentiles.loc[(bmi_percentiles.Sex == individual.sex.min()) &
@@ -133,6 +193,25 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
   return plt
 
 def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=None, order='largest', out=None):
+  """
+  Displays the top ten records depending on the criteria passed in
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, bmi, height, weight, include_height, include_weight, rounded_age
+             and sex columns
+  field: (String) What field to sort on. Expected values are "height", "weight" and "bmi"
+  age: (List) Two elements containing the minimum and maximum ages that should be
+       included in the statistics. None if no age filtering desired.
+  sex: (Integer) 1 - Female, 0 - Male, None - no sex filtering
+  wexclusion: (List) of weight exclusions to filter on. None - no weight exclusion filtering
+  hexclusion: (List) of height exclusions to filter on. None - no height exclusion filtering
+  order: (String) Sort order - Expected values are "smallest" and "largest"
+  out: (ipywidgets.Output) displays the resilrs
+
+  Returns:
+  If out is None, it will return a DataFrame. If out is provided, results will be displayed
+  in the notebook.
+  """
   working_set = merged_df
   if age != None:
     working_set = working_set.loc[working_set.rounded_age.ge(age[0]) & working_set.rounded_age.le(age[1])]
@@ -146,8 +225,11 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
     working_set = working_set.nlargest(10, field)
   else:
     working_set = working_set.nsmallest(10, field)
-  out.clear_output()
-  out.append_display_data(working_set.drop(columns=['id_x', 'agedays', 'include_height', 'include_weight', 'include_both']))
+  if out == None:
+    return working_set
+  else:
+    out.clear_output()
+    out.append_display_data(working_set.drop(columns=['id_x', 'agedays', 'include_height', 'include_weight', 'include_both']))
 
 def data_frame_names(da_locals):
   frames = []
