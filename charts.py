@@ -243,3 +243,26 @@ def export_to_csv(da_locals, selection_widget, out):
   da_locals[df_name].to_csv('output/{}.csv'.format(df_name), index=False)
   out.clear_output()
   out.append_display_data(FileLinks('output'))
+
+def clean_swapped_values(merged_df):
+  """
+  This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
+  "Swapped-Measurements". It will then swap the height and weight values for those rows.
+  It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
+  The values for these columns is copied from the original categories except in the case where
+  swaps are fixed when it is set to "Include-Fixed-Swap".
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+
+  Returns:
+  The cleaned DataFrame
+  """
+  merged_df['postprocess_height_cat'] = merged_df['height_cat']
+  merged_df['postprocess_height_cat'] = merged_df['postprocess_height_cat'].cat.add_categories(['Include-Fixed-Swap'])
+  merged_df['postprocess_weight_cat'] = merged_df['weight_cat']
+  merged_df['postprocess_weight_cat'] = merged_df['postprocess_weight_cat'].cat.add_categories(['Include-Fixed-Swap'])
+  merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['height', 'weight']] = merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['weight', 'height']].values
+  merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', 'postprocess_height_cat'] = 'Include-Fixed-Swap'
+  merged_df.loc[merged_df['weight_cat'] == 'Swapped-Measurements', 'postprocess_weight_cat'] = 'Include-Fixed-Swap'
+  return merged_df
