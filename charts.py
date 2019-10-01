@@ -18,7 +18,7 @@ def setup_percentiles(percentiles):
   # Values by CDC (1=male; 2=female) differ from growthcleanr
   # which uses a numeric value of 0 (male) or 1 (female).
   # This aligns things to the growthcleanr values
-  percentiles['Sex'] = percentiles['Sex']  - 1
+  percentiles['Sex'] = percentiles['Sex'] - 1
   return percentiles
 
 def setup_merged_df(obs_df):
@@ -266,3 +266,36 @@ def clean_swapped_values(merged_df):
   merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', 'postprocess_height_cat'] = 'Include-Fixed-Swap'
   merged_df.loc[merged_df['weight_cat'] == 'Swapped-Measurements', 'postprocess_weight_cat'] = 'Include-Fixed-Swap'
   return merged_df
+
+def calculate_modified_weight_zscore(merged_df, wt_percentiles):
+  """
+  Adds a column to the provided DataFrame with the modified Z score for weight
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, sex, weight and age columns
+  wt_percentiles: (DataFrame) CDC weight growth chart DataFrame with L, M, S values
+
+  Returns
+  The dataframe with a new wt_mzscore column
+  """
+  wts = wt_percentiles.copy()
+  wts['half_of_two_z_scores'] = (wts['M'] * np.power((1 + wts['L'] * wts['S'] * 2), (1 / wts['L']))) - wts['M']
+  # Calculate an age in months by rounding and then adding 0.5 to have values that match the growth chart
+  merged_df['agemos'] = np.around(merged_df['age'] * 12) + 0.5
+  mswwpt = merged_df.merge(wts[['Agemos', 'M', 'Sex', 'half_of_two_z_scores']], how='left', left_on=['sex', 'agemos'], right_on=['Sex', 'Agemos'])
+  mswwpt['wt_mzscore'] = (mswwpt['weight'] - mswwpt['M']) / mswwpt['half_of_two_z_scores']
+  return mswwpt.drop(columns=['Agemos', 'Sex', 'M', 'half_of_two_z_scores'])
+
+def cutoff_view(merged_df, subjid, cutoff, wt_df):
+  individual = merged_df[merged_df.subjid == subjid]
+  selected_param = individual[individual.include_weight == True]
+  selected_param_plot = selected_param.plot.line(x='age', y='weight', marker='.', color='k')
+  cutoffs = individual[np.absolute(individual.wt_mzscore) > cutoff]
+  selected_param_plot.scatter(x=cutoffs.age,
+                              y=cutoffs.weight, c='b', marker="o")
+  # percentile_window = wt_df.loc[(wt_df.Sex == individual.sex.min()) &
+  #                               (wt_df.age > individual.age.min()) &
+  #                               (wt_df.age < individual.age.max())]
+  # selected_param_plot.plot(percentile_window.age, percentile_window.P5, color='k')
+  # selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
+  return selected_param_plot
