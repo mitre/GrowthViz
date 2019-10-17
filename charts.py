@@ -299,3 +299,41 @@ def cutoff_view(merged_df, subjid, cutoff, wt_df):
   # selected_param_plot.plot(percentile_window.age, percentile_window.P5, color='k')
   # selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
   return selected_param_plot
+
+def prepare_for_comparison(frame_dict):
+  frames = list(map(lambda i: i[1].assign(run_name=i[0]), frame_dict.items()))
+  return pd.concat(frames)
+
+def count_comparison(combined_df):
+  grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'id': 'count'}).reset_index().pivot(index='clean_value', columns='run_name', values='id')
+  grouped = grouped.fillna(0)
+  if grouped.columns.size == 2:
+    grouped['diff'] = grouped[grouped.columns[0]] - grouped[grouped.columns[1]]
+  return grouped
+
+def subject_comparison_category_counts(combined_df):
+  grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'subjid': 'nunique'}).reset_index().pivot(index='clean_value', columns='run_name', values='subjid')
+  grouped = grouped.fillna(0)
+  if grouped.columns.size == 2:
+    grouped['diff'] = grouped[grouped.columns[0]] - grouped[grouped.columns[1]]
+    grouped['percent change'] = ((grouped[grouped.columns[1]] - grouped[grouped.columns[0]]) / grouped[grouped.columns[0]]) * 100
+  return grouped
+
+def subject_comparison_percentage(combined_df):
+  grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'subjid': 'nunique'}).reset_index().pivot(index='clean_value', columns='run_name', values='subjid')
+  grouped = grouped.fillna(0)
+  for c in grouped.columns:
+    grouped[c] = (grouped[c] / combined_df[combined_df.run_name == c].subjid.nunique()) * 100
+  if grouped.columns.size == 2:
+    grouped['diff'] = grouped[grouped.columns[0]] - grouped[grouped.columns[1]]
+  return grouped
+
+def subject_stats_comparison(combined_df):
+  stats = []
+  for rn in combined_df.run_name.unique():
+    total_subjects = combined_df[combined_df.run_name == rn].subjid.nunique()
+    only_exclusions = combined_df[(combined_df.run_name == rn) & (combined_df.include == False)]
+    percent_with_exclusion = (only_exclusions.subjid.nunique() / total_subjects) * 100
+    exclusion_per = only_exclusions.shape[0] / total_subjects
+    stats.append({'run name': rn, 'percent with exclusion': percent_with_exclusion, 'exclusions per patient': exclusion_per})
+  return pd.DataFrame.from_records(stats, index='run name')
