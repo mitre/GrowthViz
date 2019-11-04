@@ -15,6 +15,9 @@ def setup_percentiles(percentiles):
   percentiles['P95'] = pd.to_numeric(percentiles['P95'], errors='coerce')
   percentiles['age'] = percentiles['Agemos'] / 12
   percentiles['Sex'] = pd.to_numeric(percentiles['Sex'], errors='coerce')
+  percentiles['L'] = pd.to_numeric(percentiles['L'], errors='coerce')
+  percentiles['M'] = pd.to_numeric(percentiles['M'], errors='coerce')
+  percentiles['S'] = pd.to_numeric(percentiles['S'], errors='coerce')
   # Values by CDC (1=male; 2=female) differ from growthcleanr
   # which uses a numeric value of 0 (male) or 1 (female).
   # This aligns things to the growthcleanr values
@@ -41,6 +44,12 @@ def setup_merged_df(obs_df):
   clean_column_names['rounded_age'] = np.around(clean_column_names.age)
   clean_column_names['include_both'] = clean_column_names['include_height'] & clean_column_names['include_weight']
   return clean_column_names
+
+def add_mzscored_to_merged_df(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
+  merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
+  merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
+  merged_df = calculate_modified_zscore(merged_df, bmi_percentiles, 'bmi')
+  return merged_df
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
               include_std=True, include_median=True, include_mean_diff=True,
@@ -226,11 +235,16 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
     working_set = working_set.nlargest(10, field)
   else:
     working_set = working_set.nsmallest(10, field)
+  working_set = working_set.drop(columns=['id_x', 'agedays', 'include_height',
+      'include_weight', 'include_both', 'rounded_age', 'agemos'])
+  working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
+  working_set = working_set[['subjid', 'sex', 'age', 'height', 'height_cat', 'height_mzscore',
+    'weight', 'weight_cat', 'weight_mzscore', 'bmi', 'bmi_mzscore']]
   if out == None:
     return working_set
   else:
     out.clear_output()
-    out.append_display_data(working_set.drop(columns=['id_x', 'agedays', 'include_height', 'include_weight', 'include_both']))
+    out.append_display_data(working_set)
 
 def data_frame_names(da_locals):
   frames = []
@@ -278,21 +292,15 @@ def calculate_modified_weight_zscore(merged_df, wt_percentiles):
   wt_percentiles: (DataFrame) CDC weight growth chart DataFrame with L, M, S values
 
   Returns
-  The dataframe with a new wt_mzscore column
+  The dataframe with a new weight_mzscore column
   """
-  wts = wt_percentiles.copy()
-  wts['half_of_two_z_scores'] = (wts['M'] * np.power((1 + wts['L'] * wts['S'] * 2), (1 / wts['L']))) - wts['M']
-  # Calculate an age in months by rounding and then adding 0.5 to have values that match the growth chart
-  merged_df['agemos'] = np.around(merged_df['age'] * 12) + 0.5
-  mswwpt = merged_df.merge(wts[['Agemos', 'M', 'Sex', 'half_of_two_z_scores']], how='left', left_on=['sex', 'agemos'], right_on=['Sex', 'Agemos'])
-  mswwpt['wt_mzscore'] = (mswwpt['weight'] - mswwpt['M']) / mswwpt['half_of_two_z_scores']
-  return mswwpt.drop(columns=['Agemos', 'Sex', 'M', 'half_of_two_z_scores'])
+  return calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
 
 def cutoff_view(merged_df, subjid, cutoff, wt_df):
   individual = merged_df[merged_df.subjid == subjid]
   selected_param = individual[individual.include_weight == True]
   selected_param_plot = selected_param.plot.line(x='age', y='weight', marker='.', color='k')
-  cutoffs = individual[np.absolute(individual.wt_mzscore) > cutoff]
+  cutoffs = individual[np.absolute(individual.weight_mzscore) > cutoff]
   selected_param_plot.scatter(x=cutoffs.age,
                               y=cutoffs.weight, c='b', marker="o")
   # percentile_window = wt_df.loc[(wt_df.Sex == individual.sex.min()) &
@@ -409,3 +417,22 @@ def exclusion_information(obs):
   exc['weight percent'] = exc['WEIGHTKG'] / exc['WEIGHTKG'].sum() * 100
   exc = exc[['HEIGHTCM', 'height percent', 'WEIGHTKG', 'weight percent']]
   return exc
+
+def calculate_modified_zscore(merged_df, percentiles, category):
+  """
+  Adds a column to the provided DataFrame with the modified Z score for the provided category
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, sex, weight and age columns
+  percentiles: (DataFrame) CDC growth chart DataFrame with L, M, S values for the desired category
+
+  Returns
+  The dataframe with a new "category"_mzscore column
+  """
+  pct_cpy = percentiles.copy()
+  pct_cpy['half_of_two_z_scores'] = (pct_cpy['M'] * np.power((1 + pct_cpy['L'] * pct_cpy['S'] * 2), (1 / pct_cpy['L']))) - pct_cpy['M']
+  # Calculate an age in months by rounding and then adding 0.5 to have values that match the growth chart
+  merged_df['agemos'] = np.around(merged_df['age'] * 12) + 0.5
+  mswpt = merged_df.merge(pct_cpy[['Agemos', 'M', 'Sex', 'half_of_two_z_scores']], how='left', left_on=['sex', 'agemos'], right_on=['Sex', 'Agemos'])
+  mswpt[category + '_mzscore'] = (mswpt[category] - mswpt['M']) / mswpt['half_of_two_z_scores']
+  return mswpt.drop(columns=['Agemos', 'Sex', 'M', 'half_of_two_z_scores'])
