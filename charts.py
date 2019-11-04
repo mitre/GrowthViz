@@ -303,10 +303,33 @@ def cutoff_view(merged_df, subjid, cutoff, wt_df):
   return selected_param_plot
 
 def prepare_for_comparison(frame_dict):
+  """
+  This is the function that should be used when planning on comparing multiple runs to one another.
+  It takes in a dictionary of run names to run DataFrames. It outputs a single DataFrame with an
+  additional run_name column. This is the format expected by other functions that perform run
+  comparison.
+
+  Parameters:
+  frame_dict: A dictionary where the keys are the user specified name of a particular growthcleanr
+    run and the values are DataFrames, in the format output by setup_individual_obs_df.
+
+  Returns:
+  A single DataFrame in the same format as returned by setup_individual_obs_df but with an additional
+  run_name column.
+  """
   frames = list(map(lambda i: i[1].assign(run_name=i[0]), frame_dict.items()))
   return pd.concat(frames)
 
 def count_comparison(combined_df):
+  """
+  Provides a DataFrame that compares counts of growthcleanr categories between runs.
+
+  Parameters:
+  combined_df: A DataFrame in the format provided by prepare_for_comparison
+
+  Returns:
+  A DataFrame where the categories are the index and the columns are the run names.
+  """
   grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'id': 'count'}).reset_index().pivot(index='clean_value', columns='run_name', values='id')
   grouped = grouped.fillna(0)
   if grouped.columns.size == 2:
@@ -314,6 +337,16 @@ def count_comparison(combined_df):
   return grouped
 
 def subject_comparison_category_counts(combined_df):
+  """
+  Provides a DataFrame that counts the number of subjects with at least one measurement in one of the
+  growthcleanr categories, by run.
+
+  Parameters:
+  combined_df: A DataFrame in the format provided by prepare_for_comparison
+
+  Returns:
+  A DataFrame where the categories are the index and the columns are the run names.
+  """
   grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'subjid': 'nunique'}).reset_index().pivot(index='clean_value', columns='run_name', values='subjid')
   grouped = grouped.fillna(0)
   if grouped.columns.size == 2:
@@ -322,6 +355,16 @@ def subject_comparison_category_counts(combined_df):
   return grouped
 
 def subject_comparison_percentage(combined_df):
+  """
+  Provides a DataFrame that computes the percentage of subjects with at least one measurement in one of the
+  growthcleanr categories, by run.
+
+  Parameters:
+  combined_df: A DataFrame in the format provided by prepare_for_comparison
+
+  Returns:
+  A DataFrame where the categories are the index and the columns are the run names.
+  """
   grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'subjid': 'nunique'}).reset_index().pivot(index='clean_value', columns='run_name', values='subjid')
   grouped = grouped.fillna(0)
   for c in grouped.columns:
@@ -331,6 +374,17 @@ def subject_comparison_percentage(combined_df):
   return grouped
 
 def subject_stats_comparison(combined_df):
+  """
+  Calculates the percentage of subjects with an exclusion and the rate of exclusions per
+  patient.
+
+  Parameters:
+  combined_df: A DataFrame in the format provided by prepare_for_comparison
+
+  Returns:
+  A DataFrame with run names as the index and the columns of percentages of subjects and
+  rates of exclusion.
+  """
   stats = []
   for rn in combined_df.run_name.unique():
     total_subjects = combined_df[combined_df.run_name == rn].subjid.nunique()
@@ -341,6 +395,15 @@ def subject_stats_comparison(combined_df):
   return pd.DataFrame.from_records(stats, index='run name')
 
 def exclusion_information(obs):
+  """
+  Provides a count and percentage of growthcleanr categories by measurement type (param).
+
+  Parameters:
+  obs: a DataFrame, in the format output by setup_individual_obs_df
+
+  Returns:
+  A DataFrame with the counts and percentages
+  """
   exc = obs.groupby(['param', 'clean_cat']).agg({'id': 'count'}).reset_index().pivot(index="clean_cat", columns='param', values='id')
   exc['height percent'] = exc['HEIGHTCM'] / exc['HEIGHTCM'].sum() * 100
   exc['weight percent'] = exc['WEIGHTKG'] / exc['WEIGHTKG'].sum() * 100
