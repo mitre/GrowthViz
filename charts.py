@@ -265,6 +265,7 @@ def clean_swapped_values(merged_df):
   merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['height', 'weight']] = merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['weight', 'height']].values
   merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', 'postprocess_height_cat'] = 'Include-Fixed-Swap'
   merged_df.loc[merged_df['weight_cat'] == 'Swapped-Measurements', 'postprocess_weight_cat'] = 'Include-Fixed-Swap'
+  merged_df['bmi'] = merged_df['weight'] / ((merged_df['height'] / 100) ** 2)
   return merged_df
 
 def calculate_modified_weight_zscore(merged_df, wt_percentiles):
