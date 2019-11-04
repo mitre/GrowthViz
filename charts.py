@@ -68,6 +68,8 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
   If out is None, it will return a DataFrame. If out is provided, results will be displayed
   in the notebook.
   """
+  age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1])]
+  age_filtered['sex'] = age_filtered.sex.replace(0, 'M').replace(1, 'F')
   agg_functions = []
   if include_min:
     agg_functions.append('min')
@@ -81,18 +83,17 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
     agg_functions.append('median')
   if include_count:
     agg_functions.append('count')
-  clean_groups = merged_df[merged_df.include_both].groupby(['rounded_age',
-                                                            'sex'])['bmi'].agg(agg_functions)
-  raw_groups = merged_df.groupby(['rounded_age', 'sex'])['bmi'].agg(agg_functions)
-  merged_stats = clean_groups.merge(raw_groups, on=['rounded_age', 'sex'], suffixes=('_clean', '_raw'))
+  clean_groups = age_filtered[age_filtered.include_both].groupby(['sex',
+                                                            'rounded_age'])['bmi'].agg(agg_functions)
+  raw_groups = age_filtered.groupby(['sex', 'rounded_age'])['bmi'].agg(agg_functions)
+  merged_stats = clean_groups.merge(raw_groups, on=['sex', 'rounded_age'], suffixes=('_clean', '_raw'))
   if include_mean & include_mean_diff:
     merged_stats['mean_diff'] = merged_stats['mean_raw'] - merged_stats['mean_clean']
-  age_filtered = merged_stats.loc[(age_range[0]):(age_range[1])]
   if out == None:
-    return age_filtered
+    return merged_stats
   else:
     out.clear_output()
-    out.append_display_data(age_filtered.style.format("{:.2f}"))
+    out.append_display_data(merged_stats.style.format("{:.2f}"))
 
 def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df):
   """
