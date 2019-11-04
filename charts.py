@@ -339,3 +339,10 @@ def subject_stats_comparison(combined_df):
     exclusion_per = only_exclusions.shape[0] / total_subjects
     stats.append({'run name': rn, 'percent with exclusion': percent_with_exclusion, 'exclusions per patient': exclusion_per})
   return pd.DataFrame.from_records(stats, index='run name')
+
+def exclusion_information(obs):
+  exc = obs.groupby(['param', 'clean_cat']).agg({'id': 'count'}).reset_index().pivot(index="clean_cat", columns='param', values='id')
+  exc['height percent'] = exc['HEIGHTCM'] / exc['HEIGHTCM'].sum() * 100
+  exc['weight percent'] = exc['WEIGHTKG'] / exc['WEIGHTKG'].sum() * 100
+  exc = exc[['HEIGHTCM', 'height percent', 'WEIGHTKG', 'weight percent']]
+  return exc
