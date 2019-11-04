@@ -157,7 +157,7 @@ def five_by_five_view(obs_df, subjids, param):
       ax[x, y].scatter(excluded_selected_param.age, excluded_selected_param.measurement, c='r', marker='x')
       ax[x, y].set(title=subjid)
   fig.set_size_inches(20, 12)
-  return plt
+  return plt.tight_layout()
 
 def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
   """
