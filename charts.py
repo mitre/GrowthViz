@@ -231,10 +231,10 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
     working_set = working_set[working_set.weight_cat.isin(wexclusion)]
   if hexclusion != None:
     working_set = working_set[working_set.height_cat.isin(hexclusion)]
-  if order == 'largest':
-    working_set = working_set.nlargest(10, field)
-  else:
-    working_set = working_set.nsmallest(10, field)
+  # if order == 'largest':
+  #   working_set = working_set.nlargest(10, field)
+  # else:
+  #   working_set = working_set.nsmallest(10, field)
   working_set = working_set.drop(columns=['id_x', 'agedays', 'include_height',
       'include_weight', 'include_both', 'rounded_age', 'agemos'])
   working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
