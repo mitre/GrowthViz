@@ -1,4 +1,4 @@
-# Growthcleanr Data Exploration Tool
+# GrowthViz
 
 The real code for this is in Latest Demo Code.ipynb. Other notebooks contain previous attempts at
 getting things working.
@@ -26,7 +26,7 @@ As stated in [Automated identification of implausible values in growth data from
 
 [growthcleanr](https://github.com/carriedaymont/growthcleanr) is an automated method for cleaning longitudinal pediatric growth data from EHRs. It is available as open source software.
 
-## Data Exploration Tool
+## GrowthViz Purpose
 
 The objective of this tool is to allow users to analyze how growthcleanr is performing on a data set. This tool is to be used **after** a data set has been run through growthcleanr.
 
@@ -38,7 +38,7 @@ Visualization in the tool is provided by [Matplotlib](https://matplotlib.org/) a
 
 ## Simple Install
 
-Anaconda is a all in one package installer for setting up dependencies needed to run and view the jupyter notebook.
+Anaconda is a all in one package installer for setting up dependencies needed to run and view GrowthViz.
 
 1. Follow install instructions [found here](https://docs.anaconda.com/anaconda/install/) to install anaconda. The [windows install instructions](https://docs.anaconda.com/anaconda/install/windows/) are step-by-step and will get everything setup properly for the project.
 2. Download the [bmi-demo project](https://gitlab.mitre.org/codi/bmi-demo) and unzip it to have access to all of the source files for the Jupyter notebook. The download button is on the top right corner of the page next to the Find File button.
