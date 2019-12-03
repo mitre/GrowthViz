@@ -359,7 +359,10 @@ def count_comparison(combined_df):
   grouped = grouped.fillna(0)
   if grouped.columns.size == 2:
     grouped['diff'] = grouped[grouped.columns[0]] - grouped[grouped.columns[1]]
-  return grouped
+    grouped['tmp_sort'] = grouped['diff'].replace(0, np.NINF)
+    grouped = grouped.sort_values('tmp_sort', ascending=False)
+    grouped = grouped.drop(columns=['tmp_sort'])
+  return grouped.style.format("{:.0f}")
 
 def subject_comparison_category_counts(combined_df):
   """
@@ -375,8 +378,13 @@ def subject_comparison_category_counts(combined_df):
   grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'subjid': 'nunique'}).reset_index().pivot(index='clean_value', columns='run_name', values='subjid')
   grouped = grouped.fillna(0)
   if grouped.columns.size == 2:
-    grouped['diff'] = grouped[grouped.columns[0]] - grouped[grouped.columns[1]]
-    grouped['percent change'] = ((grouped[grouped.columns[1]] - grouped[grouped.columns[0]]) / grouped[grouped.columns[0]]) * 100
+    grouped['diff'] = grouped[grouped.columns[1]] - grouped[grouped.columns[0]]
+    grouped['population percent change'] = ((grouped[grouped.columns[1]] - grouped[grouped.columns[0]]) / grouped[grouped.columns[1]].sum()) * 100
+    grouped['tmp_sort'] = grouped['diff'].replace(0, np.NINF)
+    grouped = grouped.sort_values('tmp_sort', ascending=False)
+    grouped = grouped.drop(columns=['tmp_sort'])
+    grouped = grouped.style.format({grouped.columns[0]: "{:.0f}", grouped.columns[1]: "{:.0f}",
+                                    'diff': "{:.0f}", 'population percent change': "{:.2f}%"})
   return grouped
 
 def subject_comparison_percentage(combined_df):
@@ -395,8 +403,11 @@ def subject_comparison_percentage(combined_df):
   for c in grouped.columns:
     grouped[c] = (grouped[c] / combined_df[combined_df.run_name == c].subjid.nunique()) * 100
   if grouped.columns.size == 2:
-    grouped['diff'] = grouped[grouped.columns[0]] - grouped[grouped.columns[1]]
-  return grouped
+    grouped['diff'] = grouped[grouped.columns[1]] - grouped[grouped.columns[0]]
+    grouped['tmp_sort'] = grouped['diff'].replace(0, np.NINF)
+    grouped = grouped.sort_values('tmp_sort', ascending=False)
+    grouped = grouped.drop(columns=['tmp_sort'])
+  return grouped.style.format("{:.2f}%")
 
 def subject_stats_comparison(combined_df):
   """
