@@ -415,8 +415,12 @@ def exclusion_information(obs):
   exc = obs.groupby(['param', 'clean_cat']).agg({'id': 'count'}).reset_index().pivot(index="clean_cat", columns='param', values='id')
   exc['height percent'] = exc['HEIGHTCM'] / exc['HEIGHTCM'].sum() * 100
   exc['weight percent'] = exc['WEIGHTKG'] / exc['WEIGHTKG'].sum() * 100
-  exc = exc[['HEIGHTCM', 'height percent', 'WEIGHTKG', 'weight percent']]
-  return exc
+  exc = exc.fillna(0)
+  exc['total'] = exc['HEIGHTCM'] + exc['WEIGHTKG']
+  exc = exc[['HEIGHTCM', 'height percent', 'WEIGHTKG', 'weight percent', 'total']]
+  exc = exc.sort_values('total', ascending=False)
+  return exc.style.format({'HEIGHTCM': "{:.0f}".format, 'height percent': "{:.2f}%",
+                           'WEIGHTKG': "{:.0f}".format, 'weight percent': "{:.2f}%"})
 
 def calculate_modified_zscore(merged_df, percentiles, category):
   """
