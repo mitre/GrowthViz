@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from IPython.display import FileLink, FileLinks
+from IPython.display import FileLink, FileLinks, Markdown
 
 def setup_individual_obs_df(obs_df):
   obs_df['clean_cat'] = obs_df['clean_value'].astype('category')
@@ -52,7 +52,7 @@ def add_mzscored_to_merged_df(merged_df, wt_percentiles, ht_percentiles, bmi_per
   return merged_df
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
-              include_std=True, include_median=True, include_mean_diff=True,
+              include_std=True, include_mean_diff=True,
               include_count=True, age_range=[2, 20]):
   """
   Computes summary statistics for BMI. Clean values are for BMIs computed when both the height
@@ -66,7 +66,6 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
   include_mean: (Boolean) Whether to include the mean value column
   include_max: (Boolean) Whether to include the maximum value column
   include_std: (Boolean) Whether to include the standard deviation column
-  include_median: (Boolean) Whether to include the median value column
   include_mean_diff: (Boolean) Whether to include the difference between the raw and
                      clean mean value column
   include_count: (Boolean) Whether to include the count column
@@ -80,16 +79,23 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
   age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1])]
   age_filtered['sex'] = age_filtered.sex.replace(0, 'M').replace(1, 'F')
   agg_functions = []
+  formatters = {}
   if include_min:
     agg_functions.append('min')
+    formatters['min_clean'] = "{:.2f}".format
+    formatters['min_raw'] = "{:.2f}".format
   if include_mean:
     agg_functions.append('mean')
+    formatters['mean_clean'] = "{:.2f}".format
+    formatters['mean_raw'] = "{:.2f}".format
   if include_max:
     agg_functions.append('max')
+    formatters['max_clean'] = "{:.2f}".format
+    formatters['max_raw'] = "{:.2f}".format
   if include_std:
     agg_functions.append('std')
-  if include_median:
-    agg_functions.append('median')
+    formatters['sd_clean'] = "{:.2f}".format
+    formatters['sd_raw'] = "{:.2f}".format
   if include_count:
     agg_functions.append('count')
   clean_groups = age_filtered[age_filtered.include_both].groupby(['sex',
@@ -97,12 +103,17 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
   raw_groups = age_filtered.groupby(['sex', 'rounded_age'])['bmi'].agg(agg_functions)
   merged_stats = clean_groups.merge(raw_groups, on=['sex', 'rounded_age'], suffixes=('_clean', '_raw'))
   if include_mean & include_mean_diff:
-    merged_stats['mean_diff'] = merged_stats['mean_raw'] - merged_stats['mean_clean']
+    merged_stats['count_diff'] = merged_stats['count_raw'] - merged_stats['count_clean']
+  if include_std:
+    merged_stats = merged_stats.rename(columns={'std_raw': 'sd_raw', 'std_clean': 'sd_clean'})
   if out == None:
     return merged_stats
   else:
     out.clear_output()
-    out.append_display_data(merged_stats.style.format("{:.2f}"))
+    out.append_display_data(Markdown("## Female"))
+    out.append_display_data(merged_stats.loc['F'].style.format(formatters))
+    out.append_display_data(Markdown("## Male"))
+    out.append_display_data(merged_stats.loc['M'].style.format(formatters))
 
 def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df):
   """
