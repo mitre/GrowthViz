@@ -156,7 +156,7 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
     selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
   return selected_param_plot
 
-def five_by_five_view(obs_df, subjids, param):
+def five_by_five_view(obs_df, subjids, param, wt_df, ht_df):
   """
   Creates a small multiples plot showing the growth trend for 25 individuals
 
@@ -175,6 +175,12 @@ def five_by_five_view(obs_df, subjids, param):
       ax[x, y].plot(selected_param.age, selected_param.measurement, marker='.')
       excluded_selected_param = selected_param[selected_param.clean_value != 'Include']
       ax[x, y].scatter(excluded_selected_param.age, excluded_selected_param.measurement, c='r', marker='x')
+      percentile_df = wt_df if param == 'WEIGHTKG' else ht_df
+      percentile_window = percentile_df.loc[(percentile_df.Sex == individual.sex.min()) &
+                                            (percentile_df.age > individual.age.min()) &
+                                            (percentile_df.age < individual.age.max())]
+      ax[x, y].plot(percentile_window.age, percentile_window.P5, color='k')
+      ax[x, y].plot(percentile_window.age, percentile_window.P95, color='k')
       ax[x, y].set(title=subjid)
   fig.set_size_inches(20, 12)
   return plt.tight_layout()
