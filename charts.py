@@ -255,8 +255,13 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
   working_set = working_set.drop(columns=['id_x', 'agedays', 'include_height',
       'include_weight', 'include_both', 'rounded_age', 'agemos'])
   working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
-  working_set = working_set[['subjid', 'sex', 'age', 'height', 'height_cat', 'height_mzscore',
-    'weight', 'weight_cat', 'weight_mzscore', 'bmi', 'bmi_mzscore']]
+  working_set['age'] = working_set.age.round(decimals=1)
+  working_set['height'] = working_set.height.round(decimals=1)
+  working_set['weight'] = working_set.weight.round(decimals=1)
+  working_set['weight_cat'] = working_set.weight_cat.str.replace('Exclude-', '')
+  working_set['height_cat'] = working_set.height_cat.str.replace('Exclude-', '')
+  working_set = working_set[['subjid', 'sex', 'age', 'height', 'height_cat', 'htz',
+    'weight', 'weight_cat', 'wtz', 'bmi', 'BMIz']]
   if out == None:
     return working_set
   else:
@@ -309,7 +314,7 @@ def calculate_modified_weight_zscore(merged_df, wt_percentiles):
   wt_percentiles: (DataFrame) CDC weight growth chart DataFrame with L, M, S values
 
   Returns
-  The dataframe with a new weight_mzscore column
+  The dataframe with a new wtz column
   """
   return calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
 
@@ -317,7 +322,7 @@ def cutoff_view(merged_df, subjid, cutoff, wt_df):
   individual = merged_df[merged_df.subjid == subjid]
   selected_param = individual[individual.include_weight == True]
   selected_param_plot = selected_param.plot.line(x='age', y='weight', marker='.', color='k')
-  cutoffs = individual[np.absolute(individual.weight_mzscore) > cutoff]
+  cutoffs = individual[np.absolute(individual.wtz) > cutoff]
   selected_param_plot.scatter(x=cutoffs.age,
                               y=cutoffs.weight, c='b', marker="o")
   # percentile_window = wt_df.loc[(wt_df.Sex == individual.sex.min()) &
@@ -459,12 +464,17 @@ def calculate_modified_zscore(merged_df, percentiles, category):
   percentiles: (DataFrame) CDC growth chart DataFrame with L, M, S values for the desired category
 
   Returns
-  The dataframe with a new "category"_mzscore column
+  The dataframe with a new zscore column mapped with the z_column_name list
   """
   pct_cpy = percentiles.copy()
   pct_cpy['half_of_two_z_scores'] = (pct_cpy['M'] * np.power((1 + pct_cpy['L'] * pct_cpy['S'] * 2), (1 / pct_cpy['L']))) - pct_cpy['M']
   # Calculate an age in months by rounding and then adding 0.5 to have values that match the growth chart
   merged_df['agemos'] = np.around(merged_df['age'] * 12) + 0.5
   mswpt = merged_df.merge(pct_cpy[['Agemos', 'M', 'Sex', 'half_of_two_z_scores']], how='left', left_on=['sex', 'agemos'], right_on=['Sex', 'Agemos'])
-  mswpt[category + '_mzscore'] = (mswpt[category] - mswpt['M']) / mswpt['half_of_two_z_scores']
+  z_column_name = {
+   'weight': 'wtz',
+   'height': 'htz',
+   'bmi': 'BMIz'
+  }
+  mswpt[z_column_name[category]] = (mswpt[category] - mswpt['M']) / mswpt['half_of_two_z_scores']
   return mswpt.drop(columns=['Agemos', 'Sex', 'M', 'half_of_two_z_scores'])
