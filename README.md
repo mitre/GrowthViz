@@ -42,10 +42,18 @@ Anaconda is a all in one package installer for setting up dependencies needed to
 
 1. Follow install instructions [found here](https://docs.anaconda.com/anaconda/install/) to install anaconda. The [windows install instructions](https://docs.anaconda.com/anaconda/install/windows/) are step-by-step and will get everything setup properly for the project.
 2. Download the [bmi-demo project](https://gitlab.mitre.org/codi/bmi-demo) and unzip it to have access to all of the source files for the Jupyter notebook. The download button is on the top right corner of the page next to the Find File button.
-3. Once the above dependencies are downloaded run the Anaconda Navigator that was installed during Step 1.
-4. In Anaconda navigator you should see Jupyter Notebook as one of the default applications installed. Click Launch under the Jupyter icon. This will open the Jupyter interface in your default browser.
-5. Within the browser, navigate to the `bmi-demo` folder you downloaded and unzipped in step 2. Select the `Latest Demo Code.ipynb` to run the Python notebook.
-6. Once the notebook is open you can click on the "Run" button to step through the various blocks (cells) of the document.
+3. Once the above dependencies are downloaded, run the Anaconda Navigator that was installed during Step 1.
+4. Before Launching the Jupyter Notebook application (shown on the home page), download one additional dependency "qgrid". To do this:
+  - Click 'Environments' on the left.
+  - Type 'Qgrid' the Search Packages text box in the top center of the screen. If it shows up with a green checkbox, proceed to step 5.
+  - Change the 'Installed' drop down in the top center of the application to 'Not Installed' and type in 'Qgrid' in the search bar on the right.
+  - If Qgrid does not show up click 'Update Index...' button next to the search bar. This may take a couple minutes, once it is done search for qgrid again.
+  - Check the box to the left of Qgrid in the list and click the green 'Apply' button in the lower right corner.
+  - Confirm the installation dialog.
+  - Once instalation is successful proceed to step 5.
+5. In Anaconda navigator you should see Jupyter Notebook as one of the default applications installed. Click Launch under the Jupyter icon. This will open the Jupyter interface in your default browser.
+6. Within the browser, navigate to the `bmi-demo` folder you downloaded and unzipped in step 2 (likely found in your Downloads/ folder). Select the `Latest Demo Code.ipynb` to run the Python notebook.
+7. Once the notebook is open you can click on the "Run" button to step through the various blocks (cells) of the document.
 
 ## Sample data and first run testing
 
