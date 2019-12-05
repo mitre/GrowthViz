@@ -156,6 +156,84 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
     selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
   return selected_param_plot
 
+def overlap_view_double(obs_df, subjid, include_carry_forward, include_percentiles, wt_df, ht_df):
+  """
+  Creates a chart showing the trajectory for an individual with all values present. All values will
+  be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
+  shows the resulting trajectory when excluded values are removed.
+
+  Parameters:
+  obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+  subjid: (String) Id of the individuals to be plotted
+  include_carry_forward: (Boolean) If True, it will show carry forward values as a triangle and the
+                         yellow dashed line will include carry forward values. If False, carry
+                         forwards are excluded and will be shown as red x's.
+  include_percentiles: (Boolean) Controls whether the percentile bands are displayed
+                       on the chart
+  wt_df: (DataFrame) with the CDC growth charts by age for weight
+  ht_df: (DataFrame) with the CDC growth charts by age for height
+  """
+  individual = obs_df[obs_df.subjid == subjid]
+  height = individual[individual.param == 'HEIGHTCM']
+  weight = individual[individual.param == 'WEIGHTKG']
+  filter = height.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else height.clean_value == 'Include'
+  filter_weight = weight.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else weight.clean_value == 'Include'
+  excluded_height = height[~filter]
+  excluded_weight = weight[~filter_weight]
+  included_height = height[filter]
+  included_weight = weight[filter_weight]
+  plt.rcParams['figure.figsize'] = [9, 15]
+  fig, ax1 = plt.subplots()
+  color = 'tab:red'
+  ax1.set_ylim([50,180])
+  ax1.set_xlim([2,20])
+  ax1.set_xlabel('age (years)')
+  ax1.set_ylabel('Stature (cm)', color=color)
+
+  ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+  ax2.set_ylim([0,160])
+  ax2.set_ylabel('Weight (kg)', color='tab:blue')  # we already handled the x-label with ax1
+  if include_percentiles == True:
+    percentile_window = wt_df.loc[wt_df.Sex == individual.sex.min()]
+    ax2.plot(percentile_window.age, percentile_window.P5, color='lightblue')
+    ax2.plot(percentile_window.age, percentile_window.P10, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P25, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P50, color='lightblue')
+    ax2.plot(percentile_window.age, percentile_window.P75, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P90, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P95, color='lightblue')
+    percentile_window_ht = ht_df.loc[ht_df.Sex == individual.sex.min()]
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P5, color='pink')
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P10, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P25, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P50, color='pink')
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P75, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P90, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P95, color='pink')
+  ax1.plot(height['age'], height['measurement'], color=color)
+  ax1.scatter(excluded_height.age, excluded_height.measurement, c='r', marker='x')
+  ax1.plot(included_height['age'], included_height['measurement'], c='y', linestyle='-.')
+  ax1.tick_params(axis='y', labelcolor=color)
+
+  ax2.plot(included_weight['age'], included_weight['measurement'], color='tab:blue')
+  ax2.tick_params(axis='y', labelcolor='tab:blue')
+
+  fig.tight_layout()  # otherwise the right y-label is slightly clipped
+  # selected_param_plot = selected_param.plot.line(x='age', y='measurement')
+  # selected_param_plot.plot(included_selected_param['age'],
+  #                          included_selected_param['measurement'], c='y', linestyle='-.')
+  # selected_param_plot.scatter(x=excluded_selected_param.age,
+  #                             y=excluded_selected_param.measurement, c='r', marker="x")
+
+
+
+  # if include_carry_forward == True:
+  #   carry_forward = selected_param[selected_param.clean_value == 'Exclude-Carried-Forward']
+  #   selected_param_plot.scatter(x=carry_forward.age,
+  #                               y=carry_forward.measurement, c='c', marker="^")
+  return fig
+
 def five_by_five_view(obs_df, subjids, param, wt_df, ht_df):
   """
   Creates a small multiples plot showing the growth trend for 25 individuals
