@@ -53,7 +53,7 @@ def add_mzscored_to_merged_df(merged_df, wt_percentiles, ht_percentiles, bmi_per
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
               include_std=True, include_mean_diff=True,
-              include_count=True, age_range=[2, 20]):
+              include_count=True, age_range=[2, 20], include_missing=False):
   """
   Computes summary statistics for BMI. Clean values are for BMIs computed when both the height
   and weight values are categorized by growthcleanr as "Include". Raw values are computed for
@@ -67,19 +67,26 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
   include_max: (Boolean) Whether to include the maximum value column
   include_std: (Boolean) Whether to include the standard deviation column
   include_mean_diff: (Boolean) Whether to include the difference between the raw and
-                     clean mean value column
+            clean mean value column
   include_count: (Boolean) Whether to include the count column
-  age_range (List) Two elements containing the minimum and maximum ages that should be
+  age_range: (List) Two elements containing the minimum and maximum ages that should be
             included in the statistics
+  include_missing: (Boolean) Whether to include the missing (0) heights and weights that impact
+            raw columns
 
   Returns:
   If out is None, it will return a DataFrame. If out is provided, results will be displayed
   in the notebook.
   """
-  age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1])]
+  if include_missing:
+    age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1])]
+  else:
+    age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1]) & (merged_df.weight > 0) & (merged_df.height > 0)]
   age_filtered['sex'] = age_filtered.sex.replace(0, 'M').replace(1, 'F')
   agg_functions = []
   formatters = {}
+  # if not include_missing:
+  #   age_filtered = age_filtered
   if include_min:
     agg_functions.append('min')
     formatters['min_clean'] = "{:.2f}".format
@@ -339,7 +346,7 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
   working_set = working_set.drop(columns=['id_x', 'agedays', 'include_height',
       'include_weight', 'include_both', 'rounded_age', 'agemos'])
   working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
-  working_set['age'] = working_set.age.round(decimals=1)
+  working_set['age'] = working_set.age.round(decimals=2)
   working_set['height'] = working_set.height.round(decimals=1)
   working_set['weight'] = working_set.weight.round(decimals=1)
   working_set['weight_cat'] = working_set.weight_cat.str.replace('Exclude-', '')
@@ -386,6 +393,31 @@ def clean_swapped_values(merged_df):
   merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['height', 'weight']] = merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['weight', 'height']].values
   merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', 'postprocess_height_cat'] = 'Include-Fixed-Swap'
   merged_df.loc[merged_df['weight_cat'] == 'Swapped-Measurements', 'postprocess_weight_cat'] = 'Include-Fixed-Swap'
+  merged_df['bmi'] = merged_df['weight'] / ((merged_df['height'] / 100) ** 2)
+  return merged_df
+
+def clean_unit_errors(merged_df):
+  """
+  This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
+  "Unit-Error-High". It will then multiply / divide the height and weight values to convert them.
+  It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
+  The values for these columns is copied from the original categories except in the case where
+  swaps are fixed when it is set to "Include-UH".
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+
+  Returns:
+  The cleaned DataFrame
+  """
+  merged_df['postprocess_height_cat'] = merged_df['height_cat']
+  merged_df['postprocess_height_cat'] = merged_df['postprocess_height_cat'].cat.add_categories(['Include-UH'])
+  merged_df['postprocess_weight_cat'] = merged_df['weight_cat']
+  merged_df['postprocess_weight_cat'] = merged_df['postprocess_weight_cat'].cat.add_categories(['Include-UH'])
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] * 2.54)
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'weight'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'weight'] / 2.2046)
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'postprocess_height_cat'] = 'Include-UH'
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-High', 'postprocess_weight_cat'] = 'Include-UH'
   merged_df['bmi'] = merged_df['weight'] / ((merged_df['height'] / 100) ** 2)
   return merged_df
 
