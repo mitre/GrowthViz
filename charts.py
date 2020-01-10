@@ -53,7 +53,7 @@ def add_mzscored_to_merged_df(merged_df, wt_percentiles, ht_percentiles, bmi_per
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
               include_std=True, include_mean_diff=True,
-              include_count=True, age_range=[2, 20]):
+              include_count=True, age_range=[2, 20], include_missing=False):
   """
   Computes summary statistics for BMI. Clean values are for BMIs computed when both the height
   and weight values are categorized by growthcleanr as "Include". Raw values are computed for
@@ -67,19 +67,26 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
   include_max: (Boolean) Whether to include the maximum value column
   include_std: (Boolean) Whether to include the standard deviation column
   include_mean_diff: (Boolean) Whether to include the difference between the raw and
-                     clean mean value column
+            clean mean value column
   include_count: (Boolean) Whether to include the count column
-  age_range (List) Two elements containing the minimum and maximum ages that should be
+  age_range: (List) Two elements containing the minimum and maximum ages that should be
             included in the statistics
+  include_missing: (Boolean) Whether to include the missing (0) heights and weights that impact
+            raw columns
 
   Returns:
   If out is None, it will return a DataFrame. If out is provided, results will be displayed
   in the notebook.
   """
-  age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1])]
+  if include_missing:
+    age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1])]
+  else:
+    age_filtered = merged_df[(merged_df.rounded_age >= age_range[0]) & (merged_df.rounded_age <= age_range[1]) & (merged_df.weight > 0) & (merged_df.height > 0)]
   age_filtered['sex'] = age_filtered.sex.replace(0, 'M').replace(1, 'F')
   agg_functions = []
   formatters = {}
+  # if not include_missing:
+  #   age_filtered = age_filtered
   if include_min:
     agg_functions.append('min')
     formatters['min_clean'] = "{:.2f}".format
@@ -102,7 +109,7 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
                                                             'rounded_age'])['bmi'].agg(agg_functions)
   raw_groups = age_filtered.groupby(['sex', 'rounded_age'])['bmi'].agg(agg_functions)
   merged_stats = clean_groups.merge(raw_groups, on=['sex', 'rounded_age'], suffixes=('_clean', '_raw'))
-  if include_mean & include_mean_diff:
+  if include_mean & include_count & include_mean_diff:
     merged_stats['count_diff'] = merged_stats['count_raw'] - merged_stats['count_clean']
   if include_std:
     merged_stats = merged_stats.rename(columns={'std_raw': 'sd_raw', 'std_clean': 'sd_clean'})
@@ -155,6 +162,90 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
     selected_param_plot.plot(percentile_window.age, percentile_window.P5, color='k')
     selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
   return selected_param_plot
+
+def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_values, show_trajectory_with_exclusions, include_carry_forward, include_percentiles, wt_df, ht_df):
+  """
+  Creates a chart showing the trajectory for an individual with all values present. All values will
+  be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
+  shows the resulting trajectory when excluded values are removed.
+
+  Parameters:
+  obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+  subjid: (String) Id of the individuals to be plotted
+  include_carry_forward: (Boolean) If True, it will show carry forward values as a triangle and the
+                         yellow dashed line will include carry forward values. If False, carry
+                         forwards are excluded and will be shown as red x's.
+  include_percentiles: (Boolean) Controls whether the percentile bands are displayed
+                       on the chart
+  wt_df: (DataFrame) with the CDC growth charts by age for weight
+  ht_df: (DataFrame) with the CDC growth charts by age for height
+  """
+  individual = obs_df[obs_df.subjid == subjid]
+  height = individual[individual.param == 'HEIGHTCM']
+  weight = individual[individual.param == 'WEIGHTKG']
+  filter = height.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else height.clean_value == 'Include'
+  filter_weight = weight.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else weight.clean_value == 'Include'
+  excluded_height = height[~filter]
+  excluded_weight = weight[~filter_weight]
+  included_height = height[filter]
+  included_weight = weight[filter_weight]
+  plt.rcParams['figure.figsize'] = [8, 10]
+  fig, ax1 = plt.subplots()
+  color = 'tab:red'
+  color_secondary = 'tab:blue'
+  ax1.set_ylim([50,180])
+  ax1.set_xlim([2,20])
+  ax1.set_xlabel('age (years)')
+  ax1.set_ylabel('stature (cm)', color=color)
+
+  ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+  ax2.set_ylim([0,160])
+  ax2.set_ylabel('weight (kg)', color=color_secondary)  # we already handled the x-label with ax1
+  if include_percentiles == True:
+    percentile_window = wt_df.loc[wt_df.Sex == individual.sex.min()]
+    ax2.plot(percentile_window.age, percentile_window.P5, color='lightblue')
+    ax2.plot(percentile_window.age, percentile_window.P10, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P25, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P50, color='lightblue')
+    ax2.plot(percentile_window.age, percentile_window.P75, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P90, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age, percentile_window.P95, color='lightblue')
+    percentile_window_ht = ht_df.loc[ht_df.Sex == individual.sex.min()]
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P5, color='pink')
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P10, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P25, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P50, color='pink')
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P75, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P90, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age, percentile_window_ht.P95, color='pink')
+
+  if show_all_measurements == True:
+    ax1.plot(height['age'], height['measurement'], color=color, label='stature')
+    ax2.plot(weight['age'], weight['measurement'], color=color_secondary, label='weight')
+
+  if show_excluded_values == True:
+    ax1.scatter(excluded_height.age, excluded_height.measurement, c='black', marker='x')
+    ax2.scatter(excluded_weight.age, excluded_weight.measurement, c='black', marker='x')
+
+  if show_trajectory_with_exclusions == True:
+    ax1.plot(included_height['age'], included_height['measurement'], c='y', linestyle='-.')
+    ax2.plot(included_weight['age'], included_weight['measurement'], c='y', linestyle='-.')
+
+  ax1.tick_params(axis='y', labelcolor=color)
+  ax2.tick_params(axis='y', labelcolor=color_secondary)
+
+  fig.tight_layout()  # otherwise the right y-label is slightly clipped
+
+  if include_carry_forward == True:
+    carry_forward_height = height[height.clean_value == 'Exclude-Carried-Forward']
+    carry_forward_weight = weight[weight.clean_value == 'Exclude-Carried-Forward']
+    ax1.scatter(x=carry_forward_height.age, y=carry_forward_height.measurement, c='c', marker="^")
+    ax2.scatter(x=carry_forward_weight.age, y=carry_forward_weight.measurement, c='c', marker="^")
+
+  # Reset figsize to default
+  plt.rcParams['figure.figsize'] = [6.4, 4.8]
+  return fig
 
 def five_by_five_view(obs_df, subjids, param, wt_df, ht_df):
   """
@@ -255,7 +346,7 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
   working_set = working_set.drop(columns=['id_x', 'agedays', 'include_height',
       'include_weight', 'include_both', 'rounded_age', 'agemos'])
   working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
-  working_set['age'] = working_set.age.round(decimals=1)
+  working_set['age'] = working_set.age.round(decimals=2)
   working_set['height'] = working_set.height.round(decimals=1)
   working_set['weight'] = working_set.weight.round(decimals=1)
   working_set['weight_cat'] = working_set.weight_cat.str.replace('Exclude-', '')
@@ -302,6 +393,35 @@ def clean_swapped_values(merged_df):
   merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['height', 'weight']] = merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', ['weight', 'height']].values
   merged_df.loc[merged_df['height_cat'] == 'Swapped-Measurements', 'postprocess_height_cat'] = 'Include-Fixed-Swap'
   merged_df.loc[merged_df['weight_cat'] == 'Swapped-Measurements', 'postprocess_weight_cat'] = 'Include-Fixed-Swap'
+  merged_df['bmi'] = merged_df['weight'] / ((merged_df['height'] / 100) ** 2)
+  return merged_df
+
+def clean_unit_errors(merged_df):
+  """
+  This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
+  "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight values to convert them.
+  It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
+  The values for these columns are copied from the original categories except in the case where
+  unit errors are fixed when it is set to "Include-UH" or "Include-UL" respectively.
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+
+  Returns:
+  The cleaned DataFrame
+  """
+  merged_df['postprocess_height_cat'] = merged_df['height_cat']
+  merged_df['postprocess_height_cat'] = merged_df['postprocess_height_cat'].cat.add_categories(['Include-UH','Include-UL'])
+  merged_df['postprocess_weight_cat'] = merged_df['weight_cat']
+  merged_df['postprocess_weight_cat'] = merged_df['postprocess_weight_cat'].cat.add_categories(['Include-UH','Include-UL'])
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-Low', 'height'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-Low', 'height'] * 2.54)
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] / 2.54)
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-Low', 'weight'] = (merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-Low', 'weight'] * 2.2046)
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-High', 'weight'] = (merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-High', 'weight'] / 2.2046)
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-Low', 'postprocess_height_cat'] = 'Include-UL'
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'postprocess_height_cat'] = 'Include-UH'
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-Low', 'postprocess_weight_cat'] = 'Include-UL'
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-High', 'postprocess_weight_cat'] = 'Include-UH'
   merged_df['bmi'] = merged_df['weight'] / ((merged_df['height'] / 100) ** 2)
   return merged_df
 
