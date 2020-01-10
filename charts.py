@@ -109,7 +109,7 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
                                                             'rounded_age'])['bmi'].agg(agg_functions)
   raw_groups = age_filtered.groupby(['sex', 'rounded_age'])['bmi'].agg(agg_functions)
   merged_stats = clean_groups.merge(raw_groups, on=['sex', 'rounded_age'], suffixes=('_clean', '_raw'))
-  if include_mean & include_mean_diff:
+  if include_mean & include_count & include_mean_diff:
     merged_stats['count_diff'] = merged_stats['count_raw'] - merged_stats['count_clean']
   if include_std:
     merged_stats = merged_stats.rename(columns={'std_raw': 'sd_raw', 'std_clean': 'sd_clean'})
@@ -399,10 +399,10 @@ def clean_swapped_values(merged_df):
 def clean_unit_errors(merged_df):
   """
   This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-  "Unit-Error-High". It will then multiply / divide the height and weight values to convert them.
+  "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight values to convert them.
   It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
-  The values for these columns is copied from the original categories except in the case where
-  swaps are fixed when it is set to "Include-UH".
+  The values for these columns are copied from the original categories except in the case where
+  unit errors are fixed when it is set to "Include-UH" or "Include-UL" respectively.
 
   Parameters:
   merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
@@ -411,12 +411,16 @@ def clean_unit_errors(merged_df):
   The cleaned DataFrame
   """
   merged_df['postprocess_height_cat'] = merged_df['height_cat']
-  merged_df['postprocess_height_cat'] = merged_df['postprocess_height_cat'].cat.add_categories(['Include-UH'])
+  merged_df['postprocess_height_cat'] = merged_df['postprocess_height_cat'].cat.add_categories(['Include-UH','Include-UL'])
   merged_df['postprocess_weight_cat'] = merged_df['weight_cat']
-  merged_df['postprocess_weight_cat'] = merged_df['postprocess_weight_cat'].cat.add_categories(['Include-UH'])
-  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] * 2.54)
-  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'weight'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'weight'] / 2.2046)
+  merged_df['postprocess_weight_cat'] = merged_df['postprocess_weight_cat'].cat.add_categories(['Include-UH','Include-UL'])
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-Low', 'height'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-Low', 'height'] * 2.54)
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] = (merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'height'] / 2.54)
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-Low', 'weight'] = (merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-Low', 'weight'] * 2.2046)
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-High', 'weight'] = (merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-High', 'weight'] / 2.2046)
+  merged_df.loc[merged_df['height_cat'] == 'Unit-Error-Low', 'postprocess_height_cat'] = 'Include-UL'
   merged_df.loc[merged_df['height_cat'] == 'Unit-Error-High', 'postprocess_height_cat'] = 'Include-UH'
+  merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-Low', 'postprocess_weight_cat'] = 'Include-UL'
   merged_df.loc[merged_df['weight_cat'] == 'Unit-Error-High', 'postprocess_weight_cat'] = 'Include-UH'
   merged_df['bmi'] = merged_df['weight'] / ((merged_df['height'] / 100) ** 2)
   return merged_df
