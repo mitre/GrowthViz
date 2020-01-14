@@ -483,7 +483,7 @@ def count_comparison(combined_df):
   grouped = combined_df.groupby(['run_name', 'clean_value']).agg({'id': 'count'}).reset_index().pivot(index='clean_value', columns='run_name', values='id')
   grouped = grouped.fillna(0)
   if grouped.columns.size == 2:
-    grouped['diff'] = grouped[grouped.columns[0]] - grouped[grouped.columns[1]]
+    grouped['diff'] = grouped[grouped.columns[1]] - grouped[grouped.columns[0]]
     grouped['tmp_sort'] = grouped['diff'].replace(0, np.NINF)
     grouped = grouped.sort_values('tmp_sort', ascending=False)
     grouped = grouped.drop(columns=['tmp_sort'])
