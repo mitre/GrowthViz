@@ -63,5 +63,7 @@ Anaconda is an all-in-one package installer for setting up dependencies needed t
 
 By default when you reach Step 6 of the [Simple Install](#simple-install) instructions above the notebook will use sample data loaded from the `.csv` files located in the bmi-demo-master project.
 
+To ensure that all of the necessary example files are present, run the `check_setup.py` script.
+
 #### Output boxes
 When you run all cells (see Step 8 above) `Out[#]:` boxes will appear in the notebook below the `In[#]:` code cells. These outputs are the result of the functioning code blocks on the data. The out blocks will often be interactive charts and graphs used to explore the growthcleanr data. Descriptions of each `Out[#]:` block can be found in the text sections above the `In[#]:` blocks.
