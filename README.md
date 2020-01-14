@@ -2,7 +2,7 @@
 
 GrowthViz was developed in partnership between the Health FFRDC and CDC, with feedback from leading health researchers, to support post-processing and data visualization of growthcleanr output.
 
-The objective of this tool is to allow users to conduct post-processing and data visualization of growthcleanr output. [[growthcleanr](https://github.com/carriedaymont/growthcleanr) is an automated method for cleaning longitudinal pediatric growth data from EHRs. It provides an environment that includes graphical user interfaces as well as interactive software development to explore data.
+The objective of this tool is to allow users to conduct post-processing and data visualization of growthcleanr output. [growthcleanr](https://github.com/carriedaymont/growthcleanr) is an automated method for cleaning longitudinal pediatric growth data from EHRs. It provides an environment that includes graphical user interfaces as well as interactive software development to explore data.
 
 ## Contents
 
@@ -14,7 +14,7 @@ The objective of this tool is to allow users to conduct post-processing and data
 
 ## Git Repository Information
 
-The latest code for this project should run `Latest Demo Code.ipynb`.
+The latest code for this project should run `GrowthViz.ipynb`.
 
 The notebook requires Python 3, Jupyter Notebook, Pandas, Matplotlib and Seaborn. Some widgets also require the Qgrid extension enabled in Jupyter. The `.csv` files in the repository are the source data required to run the notebook. Custom data should replace these files in the same format. For more details see [the simple install instructions below.](#simple-install)
 
@@ -56,7 +56,7 @@ Anaconda is an all-in-one package installer for setting up dependencies needed t
     - Confirm the installation dialog. Installation may again take several minutes.
     - Once installation is successful, click on the 'Home' in the upper left navigation panel and proceed to Step 6.
 6. Click ‘Launch’ under the ‘Jupyter Notebook’ icon. This will open the Jupyter Notebook interface in your default browser.
-7. Within the browser, navigate to the `bmi-demo-master` folder you downloaded and unzipped in Step 2 (likely found in your Downloads/ folder). Click on `Latest Demo Code.ipynb` to run the Python notebook.
+7. Within the browser, navigate to the `bmi-demo-master` folder you downloaded and unzipped in Step 2 (likely found in your Downloads/ folder). Click on `GrowthViz.ipynb` to run the Python notebook.
 8. **[Optional step for testing the notebook]** Once the notebook is open, click the 'Run' button to step through the various blocks (cells) of the document, OR click the 'Cell' dropdown in the menu bar and select 'Run all' to test the entire notebook all at once.
 
 ## Sample data and first run testing
