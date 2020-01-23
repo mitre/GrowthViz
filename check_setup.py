@@ -23,7 +23,7 @@ check_for_file('statage.csv', 'Unable to find CDC growth charts for height / sta
 check_for_file('wtage.csv', 'Unable to find CDC growth charts for weight at age.')
 
 # Check for the example csv files
-check_for_file('clean_with_swaps.csv', 'Unable to example growthcleanr output.')
-check_for_file('clean_with_uswaps.csv', 'Unable to example growthcleanr output with unit swaps turned on.')
+check_for_file('sample-data-cleaned.csv', 'Unable to example growthcleanr output.')
+check_for_file('sample-data-cleaned-with-ue.csv', 'Unable to example growthcleanr output with unit errors turned on.')
 
 print('GrowthViz appears to be properly set up.')
