@@ -67,3 +67,8 @@ To ensure that all of the necessary example files are present, run the `check_se
 
 #### Output boxes
 When you run all cells (see Step 8 above) `Out[#]:` boxes will appear in the notebook below the `In[#]:` code cells. These outputs are the result of the functioning code blocks on the data. The out blocks will often be interactive charts and graphs used to explore the growthcleanr data. Descriptions of each `Out[#]:` block can be found in the text sections above the `In[#]:` blocks.
+
+## Notice
+Copyright 2020 The MITRE Corporation.
+
+Approved for Public Release; Distribution Unlimited. Case Number 19-2008
