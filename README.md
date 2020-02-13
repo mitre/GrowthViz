@@ -43,8 +43,8 @@ Anaconda is an all-in-one package installer for setting up dependencies needed t
  - Follow install instructions [found here for installation.](https://docs.anaconda.com/anaconda/install/)
  - Opt for the Python 3.7 version
  - The [windows install instructions](https://docs.anaconda.com/anaconda/install/windows/) are step-by-step and will get everything set up properly for the project.
-2. Download the [bmi-demo project](https://gitlab.mitre.org/codi/bmi-demo) as a zip file using the download button on the top right corner of the page next to the ‘Find File’ button.
-3. Unzip the bmi-demo-project zip file to have access to all of the source files for the Jupyter notebook.
+2. Download the [GrowthViz project](https://github.com/mitre/GrowthViz) as a zip file using the "Clone or download" button on GitHub.
+3. Unzip the GrowthViz zip file to have access to all of the source files for the Jupyter notebook.
 4. Run the Anaconda Navigator that was installed during Step 1 (go to Start>Anaconda Navigator). This may take a while to load.
 5. Before Launching the Jupyter Notebook application (shown on the home page), download one additional dependency "Qgrid". To do this:
   - Click 'Environments' on the left.
@@ -56,12 +56,12 @@ Anaconda is an all-in-one package installer for setting up dependencies needed t
     - Confirm the installation dialog. Installation may again take several minutes.
     - Once installation is successful, click on the 'Home' in the upper left navigation panel and proceed to Step 6.
 6. Click ‘Launch’ under the ‘Jupyter Notebook’ icon. This will open the Jupyter Notebook interface in your default browser.
-7. Within the browser, navigate to the `bmi-demo-master` folder you downloaded and unzipped in Step 2 (likely found in your Downloads/ folder). Click on `GrowthViz.ipynb` to run the Python notebook.
+7. Within the browser, navigate to the `GrowthViz-master` folder you downloaded and unzipped in Step 2 (likely found in your Downloads/ folder). Click on `GrowthViz.ipynb` to run the Python notebook.
 8. **[Optional step for testing the notebook]** Once the notebook is open, click the 'Run' button to step through the various blocks (cells) of the document, OR click the 'Cell' dropdown in the menu bar and select 'Run all' to test the entire notebook all at once.
 
 ## Sample data and first run testing
 
-By default when you reach Step 6 of the [Simple Install](#simple-install) instructions above the notebook will use sample data loaded from the `.csv` files located in the bmi-demo-master project.
+By default when you reach Step 6 of the [Simple Install](#simple-install) instructions above the notebook will use sample data loaded from the `.csv` files located in the GrowthViz-master project.
 
 To ensure that all of the necessary example files are present, run the `check_setup.py` script.
 
