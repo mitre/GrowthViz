@@ -11,6 +11,7 @@ The objective of this tool is to allow users to conduct post-processing and data
 - [Background](#background)
 - [Simple Install](#simple-install)
 - [Sample data and first run testing](#sample-data-and-first-run-testing)
+- [Docker Install](#docker-install)
 
 ## Git Repository Information
 
@@ -65,6 +66,26 @@ By default when you reach Step 6 of the [Simple Install](#simple-install) instru
 
 To ensure that all of the necessary example files are present, run the `check_setup.py` script.
 
+## Docker Install
+
+Docker allows for the ability to download GrowthViz and its dependencies in an environment.
+
+1. Download GrowthViz-Docker with the following command:
+ -  `docker run -it -p 8888:8888 -v [data-path]/growthviz-data:/usr/src/app/growthviz-data robis345/growthviz`
+ - Replace the `[data-path]` with a directory path you choose on your local computer. For instance, I choose: `~/Documents` which means that a folder named `/growthviz-data` will be created in my documents folder. When I want to input my own data in to GrowthViz, I can simply drop my CSV files in this `/growthviz-data` folder.
+ 2. View GrowthViz
+ - After running the above command, several lines of text will appear. Choose the third URL in this text and navigate to it in a web browser.
+ - The URL should be in the format: `http://X.X.X.X:8888/?token=XXX...`
+ - Within the browser, click on the file `GrowthViz.ipynb`. This will open a new window with the GrowthViz Jupyter Notebook.
+ 3. Run GrowthViz
+ - You can choose to either click the `Run` button to step through the various blocks (cells) of the document, OR click the 'Cell' dropdown in the menu bar and select 'Run all' to test the entire notebook all at once. However, this will run with the default sample data. Step 4 will explain how to use your own data.
+ 4. Input Your Own Dataset CSVs
+ - To input your own data, drop a file `[name-of-your-file.csv]` into the `/growthviz` folder you created in step 1.
+ - Then, navigate to Cells 7 and 28 and replace:
+ - `cleaned_obs = pd.read_csv("sample-data-cleaned.csv")` with
+ - `cleaned_obs = pd.read_csv("growthviz-data/[name-of-your-file.csv]")`
+ - Where [name-of-your-file.csv] is the input CSV file you placed in your  `/growthviz-data` folder.
+ 
 #### Output boxes
 When you run all cells (see Step 8 above) `Out[#]:` boxes will appear in the notebook below the `In[#]:` code cells. These outputs are the result of the functioning code blocks on the data. The out blocks will often be interactive charts and graphs used to explore the growthcleanr data. Descriptions of each `Out[#]:` block can be found in the text sections above the `In[#]:` blocks.
 
