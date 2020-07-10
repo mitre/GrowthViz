@@ -1,3 +1,2 @@
 .dockerignore
-robitestcsv.csv
 docker-compose.yml
