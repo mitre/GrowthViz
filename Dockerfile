@@ -14,4 +14,6 @@ COPY . ./
 
 EXPOSE 8888
 
+RUN jupyter nbextension enable --py --sys-prefix qgrid
+
 CMD jupyter notebook
