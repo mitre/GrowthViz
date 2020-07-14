@@ -368,9 +368,9 @@ def data_frame_names(da_locals):
 
 def export_to_csv(da_locals, selection_widget, out):
   df_name = selection_widget.value
-  da_locals[df_name].to_csv('output/{}.csv'.format(df_name), index=False)
+  da_locals[df_name].to_csv('growthviz-data/output/{}.csv'.format(df_name), index=False)
   out.clear_output()
-  out.append_display_data(FileLinks('output'))
+  out.append_display_data(FileLinks('growthviz-data/output'))
 
 def clean_swapped_values(merged_df):
   """
