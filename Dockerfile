@@ -12,8 +12,6 @@ RUN pip install qgrid
 
 COPY . ./
 
-RUN mkdir growthviz-data/output/
-
 EXPOSE 8888
 
 RUN jupyter nbextension enable --py --sys-prefix qgrid
