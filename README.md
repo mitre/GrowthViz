@@ -80,7 +80,7 @@ Docker allows for the ability to download GrowthViz and its dependencies in an e
  3. Run GrowthViz
  - You can choose to either click the `Run` button to step through the various blocks (cells) of the document, OR click the 'Cell' dropdown in the menu bar and select 'Run all' to test the entire notebook all at once. However, this will run with the default sample data. Step 4 will explain how to use your own data.
  4. Input Your Own Dataset CSVs
- - To input your own data, drop a file `[name-of-your-file.csv]` into the `/growthviz` folder you created in step 1.
+ - To input your own data, drop a file `[name-of-your-file.csv]` into the `/growthviz-data` folder you created in step 1.
  - Then, navigate to Cells 7 and 28 and replace:
  - `cleaned_obs = pd.read_csv("sample-data-cleaned.csv")` with
  - `cleaned_obs = pd.read_csv("growthviz-data/[name-of-your-file.csv]")`
