@@ -71,7 +71,7 @@ To ensure that all of the necessary example files are present, run the `check_se
 Docker allows for the ability to download GrowthViz and its dependencies in an environment.
 
 1. Download GrowthViz-Docker with the following command:
- -  `docker run -it -p 8888:8888 -v [data-path]/growthviz-data:/usr/src/app/growthviz-data robis345/growthviz`
+ -  `docker run -it -p 8888:8888 -v [data-path]/growthviz-data:/usr/src/app/growthviz-data mitre/growthviz`
  - Replace the `[data-path]` with a directory path you choose on your local computer. For instance, I choose: `~/Documents` which means that a folder named `/growthviz-data` will be created in my documents folder. When I want to input my own data in to GrowthViz, I can simply drop my CSV files in this `/growthviz-data` folder.
  2. View GrowthViz
  - After running the above command, several lines of text will appear. Choose the third URL in this text and navigate to it in a web browser.
