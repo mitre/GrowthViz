@@ -11,6 +11,8 @@ RUN pip install seaborn
 RUN pip install qgrid
 
 COPY . ./
+COPY LICENSE /LICENSE
+COPY README.md /README.md
 
 EXPOSE 8888
 
