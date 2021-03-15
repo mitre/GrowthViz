@@ -163,11 +163,11 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
                                 y=carry_forward.measurement, c='c', marker="^")
   if include_percentiles == True:
     percentile_df = wt_df if param == 'WEIGHTKG' else ht_df
-    percentile_window = percentile_df.loc[(percentile_df.Sex == individual.sex.min()) &
-                                          (percentile_df.age > individual.age.min()) &
-                                          (percentile_df.age < individual.age.max())]
-    selected_param_plot.plot(percentile_window.age, percentile_window.P5, color='k')
-    selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
+    percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
+                                          (percentile_df.age_years > individual.age.min()) &
+                                          (percentile_df.age_years < individual.age.max())]
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='k')
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='k')
   return selected_param_plot
 
 def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_values, show_trajectory_with_exclusions, include_carry_forward, include_percentiles, wt_df, ht_df):
@@ -201,31 +201,31 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   color = 'tab:red'
   color_secondary = 'tab:blue'
   ax1.set_ylim([50,180])
-  ax1.set_xlim([2,20])
+  ax1.set_xlim([20,65])
   ax1.set_xlabel('age (years)')
   ax1.set_ylabel('stature (cm)', color=color)
 
   ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
-  ax2.set_ylim([0,160])
+  ax2.set_ylim([40,160])
   ax2.set_ylabel('weight (kg)', color=color_secondary)  # we already handled the x-label with ax1
   if include_percentiles == True:
-    percentile_window = wt_df.loc[wt_df.Sex == individual.sex.min()]
-    ax2.plot(percentile_window.age, percentile_window.P5, color='lightblue')
-    ax2.plot(percentile_window.age, percentile_window.P10, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P25, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P50, color='lightblue')
-    ax2.plot(percentile_window.age, percentile_window.P75, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P90, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P95, color='lightblue')
-    percentile_window_ht = ht_df.loc[ht_df.Sex == individual.sex.min()]
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P5, color='pink')
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P10, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P25, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P50, color='pink')
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P75, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P90, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P95, color='pink')
+    percentile_window = wt_df.loc[wt_df.sex == individual.sex.min()]
+    ax2.plot(percentile_window.age_years, percentile_window.P5, color='lightblue')
+    ax2.plot(percentile_window.age_years, percentile_window.P10, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P25, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P50, color='lightblue')
+    ax2.plot(percentile_window.age_years, percentile_window.P75, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P90, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P95, color='lightblue')
+    percentile_window_ht = ht_df.loc[ht_df.sex == individual.sex.min()]
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P5, color='pink')
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P10, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P25, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P50, color='pink')
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P75, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P90, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P95, color='pink')
 
   if show_all_measurements == True:
     ax1.plot(height['age'], height['measurement'], color=color, label='stature')
