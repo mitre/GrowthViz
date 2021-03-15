@@ -129,7 +129,7 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
     out.append_display_data(Markdown("## Male"))
     out.append_display_data(merged_stats.loc['M'].style.format(formatters))
 
-def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df):
+def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, bmi_df, ht_df):
   """
   Creates a chart showing the trajectory for an individual with all values present. All values will
   be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
@@ -162,12 +162,19 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
     selected_param_plot.scatter(x=carry_forward.age,
                                 y=carry_forward.measurement, c='c', marker="^")
   if include_percentiles == True:
-    percentile_df = wt_df if param == 'WEIGHTKG' else ht_df
+    if param == 'WEIGHTKG': percentile_df = wt_df 
+    elif param == 'BMI': percentile_df = bmi_df 
+    else: percentile_df = ht_df
     percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
                                           (percentile_df.age_years > individual.age.min()) &
                                           (percentile_df.age_years < individual.age.max())]
-    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='k')
-    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='k')
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='k', label='5th Percentile', linestyle='--') 
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='k', label='95th Percentile', linestyle='-.')
+    if param == 'BMI':
+      selected_param_plot.axhspan(25, 30, color='#FEFE62', alpha=0.5, lw=0, label='Overweight (25-30 BMI)')
+      selected_param_plot.axhspan(30, 50, color='#D35FB7', alpha=0.5, lw=0, label='Obese (30-50 BMI)')
+  selected_param_plot.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
+
   return selected_param_plot
 
 def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_values, show_trajectory_with_exclusions, include_carry_forward, include_percentiles, wt_df, ht_df):
