@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from IPython.display import FileLink, FileLinks, Markdown
 
 def setup_individual_obs_df(obs_df):
+  obs_df.rename(columns={'result':'clean_value'}, inplace=True)
   obs_df['clean_cat'] = obs_df['clean_value'].astype('category')
   obs_df['age'] = obs_df['agedays'] / 365
   obs_df['include'] = obs_df.clean_value.eq("Include")
@@ -32,23 +33,29 @@ def setup_merged_df(obs_df):
   merged = heights.merge(weights, on=['subjid', 'agedays', 'sex'], how='outer')
   only_needed_columns = merged.drop(columns=['param_x', 'measurement_x', 'clean_value_x',
                                              'age_x', 'weight_x', 'id_y', 'param_y',
-                                             'measurement_y', 'clean_value_y', 'height_y'])
+                                             'measurement_y', 'clean_value_y', 'height_y',
+                                             'ethnicity_x', 'ethnicity_y', 'event_date_x', 'event_date_y', 'site_key_x', 'site_key_y',
+                                             'site_location_x', 'site_location_y', 'age_years_x', 'reason_x'])
   clean_column_names = only_needed_columns.rename(columns={'clean_cat_x': 'height_cat',
                                                            'include_x': 'include_height',
                                                            'height_x': 'height',
                                                            'clean_cat_y': 'weight_cat',
                                                            'age_y': 'age',
                                                            'include_y': 'include_weight',
-                                                           'weight_y': 'weight'})
+                                                           'weight_y': 'weight',
+                                                           'age_years_y':'age_years', 
+                                                           'reason_y':'reason', 
+                                                           'id_x':'id'})
   clean_column_names['bmi'] = clean_column_names['weight'] / ((clean_column_names['height'] / 100) ** 2)
   clean_column_names['rounded_age'] = np.around(clean_column_names.age)
   clean_column_names['include_both'] = clean_column_names['include_height'] & clean_column_names['include_weight']
   return clean_column_names
 
-def add_mzscored_to_merged_df(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
-  merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
-  merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
-  merged_df = calculate_modified_zscore(merged_df, bmi_percentiles, 'bmi')
+def add_mzscored_to_merged_df(merged_df, pctls): #merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
+  #merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
+  #merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
+  #merged_df = calculate_modified_zscore(merged_df, bmi_percentiles, 'bmi')
+  merged_df = merged_df.merge(pctls, on=['sex', 'age_years'], how='left')
   return merged_df
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
@@ -343,8 +350,8 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
   #   working_set = working_set.nlargest(10, field)
   # else:
   #   working_set = working_set.nsmallest(10, field)
-  working_set = working_set.drop(columns=['id_x', 'agedays', 'include_height',
-      'include_weight', 'include_both', 'rounded_age', 'agemos'])
+  working_set = working_set.drop(columns=['agedays', 'include_height',
+      'include_weight', 'include_both', 'rounded_age'])
   working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
   working_set['age'] = working_set.age.round(decimals=2)
   working_set['height'] = working_set.height.round(decimals=1)
