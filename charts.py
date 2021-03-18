@@ -60,7 +60,7 @@ def add_mzscored_to_merged_df(merged_df, pctls): #merged_df, wt_percentiles, ht_
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
               include_std=True, include_mean_diff=True,
-              include_count=True, age_range=[2, 20], include_missing=False):
+              include_count=True, age_range=[20, 65], include_missing=False):
   """
   Computes summary statistics for BMI. Clean values are for BMIs computed when both the height
   and weight values are categorized by growthcleanr as "Include". Raw values are computed for
@@ -177,6 +177,41 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
 
   return selected_param_plot
 
+def overlap_view_all(obs_df, id, param, include_carry_forward, include_percentiles, wt_df, bmi_df, ht_df):
+  """
+  FILL IN HERE
+  """
+  individual = obs_df[obs_df.subjid == id]
+  selected_param = individual[individual.param == param]
+  filter = selected_param.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
+  excluded_selected_param = selected_param[~filter]
+  included_selected_param = selected_param[filter]
+  selected_param_plot = selected_param.plot.line(x='age', y='measurement')
+  selected_param_plot.plot(included_selected_param['age'],
+                           included_selected_param['measurement'], c='y', linestyle='-.')
+  selected_param_plot.scatter(x=excluded_selected_param.age,
+                              y=excluded_selected_param.measurement, c='r', marker="x")
+  if include_carry_forward == True:
+    carry_forward = selected_param[selected_param.clean_value == 'Exclude-Carried-Forward']
+    selected_param_plot.scatter(x=carry_forward.age,
+                                y=carry_forward.measurement, c='c', marker="^")
+  if include_percentiles == True:
+    if param == 'WEIGHTKG': percentile_df = wt_df 
+    elif param == 'BMI': percentile_df = bmi_df 
+    else: percentile_df = ht_df
+    percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
+                                          (percentile_df.age_years > individual.age.min()) &
+                                          (percentile_df.age_years < individual.age.max())]
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='k', label='5th Percentile', linestyle='--') 
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='k', label='95th Percentile', linestyle='-.')
+    if param == 'BMI':
+      selected_param_plot.axhspan(25, 30, color='#FEFE62', alpha=0.5, lw=0, label='Overweight (25-30 BMI)')
+      selected_param_plot.axhspan(30, 50, color='#D35FB7', alpha=0.5, lw=0, label='Obese (30-50 BMI)')
+  selected_param_plot.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
+  plt.title(param)
+
+  return selected_param_plot
+
 def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_values, show_trajectory_with_exclusions, include_carry_forward, include_percentiles, wt_df, ht_df):
   """
   Creates a chart showing the trajectory for an individual with all values present. All values will
@@ -282,8 +317,8 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_percentiles):
       ax[x, y].scatter(excluded_selected_param.age, excluded_selected_param.measurement, c='r', marker='x')
       percentile_df = wt_df if param == 'WEIGHTKG' else ht_df
       percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
-                                            (percentile_df.age_years > individual.age.min()) &
-                                            (percentile_df.age_years < individual.age.max())]
+                                            (percentile_df.age_years >= (individual.age_years.min() - 1)) &
+                                            (percentile_df.age_years <= (individual.age_years.max() + 1))]
       ax[x, y].plot(percentile_window.age_years, percentile_window.P5, color='k')
       ax[x, y].plot(percentile_window.age_years, percentile_window.P95, color='k')
       ax[x, y].set(title=subjid)
