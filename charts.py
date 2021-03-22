@@ -188,7 +188,7 @@ def overlap_view_all(obs_df, id, param, include_carry_forward, include_percentil
   included_selected_param = selected_param[filter]
   selected_param_plot = selected_param.plot.line(x='age', y='measurement')
   selected_param_plot.plot(included_selected_param['age'],
-                           included_selected_param['measurement'], c='y', linestyle='-.')
+                           included_selected_param['measurement'], c='y', linestyle='-.', marker='o')
   selected_param_plot.scatter(x=excluded_selected_param.age,
                               y=excluded_selected_param.measurement, c='r', marker="x")
   if include_carry_forward == True:
@@ -339,20 +339,20 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
   """
   individual = merged_df[merged_df.subjid == subjid]
   fig, ax = plt.subplots(1, 2)
-  percentile_window = bmi_percentiles.loc[(bmi_percentiles.Sex == individual.sex.min()) &
-                                          (bmi_percentiles.age > individual.age.min()) &
-                                          (bmi_percentiles.age < individual.age.max())]
+  percentile_window = bmi_percentiles.loc[(bmi_percentiles.sex == individual.sex.min()) &
+                                          (bmi_percentiles.age_years > individual.age.min()) &
+                                          (bmi_percentiles.age_years < individual.age.max())]
   ax[0].plot(individual.age, individual.bmi)
-  ax[0].plot(percentile_window.age, percentile_window.P5, color='k')
-  ax[0].plot(percentile_window.age, percentile_window.P95, color='k')
+  ax[0].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[0].plot(percentile_window.age_years, percentile_window.P95, color='k')
 
   ax[0].set(xlabel='age (y)', ylabel='BMI',
         title='BMI All Values')
   ax[0].grid()
 
   ax[1].plot(individual[individual.include_height & individual.include_weight].age, individual.loc[individual.include_height & individual.include_weight].bmi)
-  ax[1].plot(percentile_window.age, percentile_window.P5, color='k')
-  ax[1].plot(percentile_window.age, percentile_window.P95, color='k')
+  ax[1].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[1].plot(percentile_window.age_years, percentile_window.P95, color='k')
 
   ax[1].set(xlabel='age (y)', ylabel='BMI',
         title='BMI Cleaned')
