@@ -152,11 +152,11 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
   filter = selected_param.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
   excluded_selected_param = selected_param[~filter]
   included_selected_param = selected_param[filter]
-  selected_param_plot = selected_param.plot.line(x='age', y='measurement')
+  selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the all measurements line, a little messier
   selected_param_plot.plot(included_selected_param['age'],
-                           included_selected_param['measurement'], c='y', linestyle='-.')
+                           included_selected_param['measurement'], c='y', linestyle='-.', lw=3, marker='o', label='Included Only') # could also try violet
   selected_param_plot.scatter(x=excluded_selected_param.age,
-                              y=excluded_selected_param.measurement, c='r', marker="x")
+                              y=excluded_selected_param.measurement, c='r', marker="x", zorder=3)
   if include_carry_forward == True:
     carry_forward = selected_param[selected_param.clean_value == 'Exclude-Carried-Forward']
     selected_param_plot.scatter(x=carry_forward.age,
@@ -166,13 +166,22 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
     elif param == 'BMI': percentile_df = bmi_df 
     else: percentile_df = ht_df
     percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
-                                          (percentile_df.age_years > individual.age.min()) &
-                                          (percentile_df.age_years < individual.age.max())]
-    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='k', label='5th Percentile', linestyle='--') 
-    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='k', label='95th Percentile', linestyle='-.')
+                                          (percentile_df.age_years >= (individual.age.min() - 1)) &
+                                          (percentile_df.age_years <= (individual.age.max() + 1))]
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='grey', label='5th Percentile', linestyle='--', marker='_') 
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='grey', label='95th Percentile', linestyle='dotted')
     if param == 'BMI':
-      selected_param_plot.axhspan(25, 30, color='#FEFE62', alpha=0.5, lw=0, label='Overweight (25-30 BMI)')
-      selected_param_plot.axhspan(30, 50, color='#D35FB7', alpha=0.5, lw=0, label='Obese (30-50 BMI)')
+      edge = (percentile_window.age_years.max() - percentile_window.age_years.min())/14
+      x = 25
+      selected_param_plot.axhline(x, color='tan') 
+      selected_param_plot.text(percentile_window.age_years.max() + edge, x, 'Overweight (25-30 BMI)', ha='left')
+      y = 30
+      selected_param_plot.axhline(y, color='tan') 
+      selected_param_plot.text(percentile_window.age_years.max() + edge, y, 'Obese (30+ BMI)', ha='left')
+      if included_selected_param['measurement'].min() < 25: # might want to make lower with more data
+        z = 18.5
+        selected_param_plot.axhline(z, color='pink') 
+        selected_param_plot.text(percentile_window.age_years.max() + edge, z, 'Underweight (<18.5 BMI)', ha='left')
   selected_param_plot.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
 
   return selected_param_plot
@@ -186,11 +195,11 @@ def overlap_view_all(obs_df, id, param, include_carry_forward, include_percentil
   filter = selected_param.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
   excluded_selected_param = selected_param[~filter]
   included_selected_param = selected_param[filter]
-  selected_param_plot = selected_param.plot.line(x='age', y='measurement')
+  selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the included line
   selected_param_plot.plot(included_selected_param['age'],
-                           included_selected_param['measurement'], c='y', linestyle='-.', marker='o')
+                           included_selected_param['measurement'], c='y', linestyle='-.', label='Included Only', marker='o', lw=3) # could also try violet
   selected_param_plot.scatter(x=excluded_selected_param.age,
-                              y=excluded_selected_param.measurement, c='r', marker="x")
+                              y=excluded_selected_param.measurement, c='r', marker="x", zorder=3)
   if include_carry_forward == True:
     carry_forward = selected_param[selected_param.clean_value == 'Exclude-Carried-Forward']
     selected_param_plot.scatter(x=carry_forward.age,
@@ -200,13 +209,22 @@ def overlap_view_all(obs_df, id, param, include_carry_forward, include_percentil
     elif param == 'BMI': percentile_df = bmi_df 
     else: percentile_df = ht_df
     percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
-                                          (percentile_df.age_years > individual.age.min()) &
-                                          (percentile_df.age_years < individual.age.max())]
-    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='k', label='5th Percentile', linestyle='--') 
-    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='k', label='95th Percentile', linestyle='-.')
+                                          (percentile_df.age_years >= (individual.age.min() - 1)) &
+                                          (percentile_df.age_years <= (individual.age.max() + 1))]
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='gray', label='5th Percentile', linestyle='--') 
+    selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='gray', label='95th Percentile', linestyle='dotted')
     if param == 'BMI':
-      selected_param_plot.axhspan(25, 30, color='#FEFE62', alpha=0.5, lw=0, label='Overweight (25-30 BMI)')
-      selected_param_plot.axhspan(30, 50, color='#D35FB7', alpha=0.5, lw=0, label='Obese (30-50 BMI)')
+      edge = (percentile_window.age_years.max() - percentile_window.age_years.min())/14
+      x = 25
+      selected_param_plot.axhline(x, color='tan') 
+      selected_param_plot.text(percentile_window.age_years.max() + edge, x, 'Overweight (25-30 BMI)', ha='left')
+      y = 30
+      selected_param_plot.axhline(y, color='tan') 
+      selected_param_plot.text(percentile_window.age_years.max() + edge, y, 'Obese (30+ BMI)', ha='left')
+      if included_selected_param['measurement'].min() < 25: # might want to make lower with more data
+        z = 18.5
+        selected_param_plot.axhline(z, color='pink') 
+        selected_param_plot.text(percentile_window.age_years.max() + edge, z, 'Underweight (<18.5 BMI)', ha='left')  
   selected_param_plot.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
   plt.title(param)
 
