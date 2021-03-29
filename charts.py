@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 from IPython.display import FileLink, FileLinks, Markdown
 
@@ -314,7 +315,7 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   plt.rcParams['figure.figsize'] = [6.4, 4.8]
   return fig
 
-def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_percentiles):
+def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df):
   """
   Creates a small multiples plot showing the growth trend for 25 individuals
 
@@ -327,16 +328,21 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_percentiles):
   fig, ax = plt.subplots(5, 5)
   for y in range(5):
     for x in range(5):
-      subjid = subjids[x + y*5]
+      subjid = subjids[x*5 + y]
       individual = obs_df[obs_df.subjid == subjid]
       selected_param = individual[individual.param == param]
       ax[x, y].plot(selected_param.age, selected_param.measurement, marker='.')
       excluded_selected_param = selected_param[selected_param.clean_value != 'Include']
       ax[x, y].scatter(excluded_selected_param.age, excluded_selected_param.measurement, c='r', marker='x')
-      percentile_df = wt_df if param == 'WEIGHTKG' else ht_df
+      if param == 'WEIGHTKG': 
+        percentile_df = wt_df 
+      elif param == 'BMI': 
+        percentile_df = bmi_df 
+      else: 
+        percentile_df = ht_df
       percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
-                                            (percentile_df.age_years >= (individual.age_years.min() - 1)) &
-                                            (percentile_df.age_years <= (individual.age_years.max() + 1))]
+                                            (percentile_df.age_years >= math.floor(individual.age.min())) &
+                                            (percentile_df.age_years <= math.ceil(individual.age.max()))]
       ax[x, y].plot(percentile_window.age_years, percentile_window.P5, color='k')
       ax[x, y].plot(percentile_window.age_years, percentile_window.P95, color='k')
       ax[x, y].set(title=subjid)
@@ -374,6 +380,44 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
 
   ax[1].set(xlabel='age (y)', ylabel='BMI',
         title='BMI Cleaned')
+  ax[1].grid()
+  return plt
+
+def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
+  """
+  Displays two charts showing BMI trajectory. The chart on the left will include all
+  values, while the chart on the right will only show values categorized as "Include"
+  by growthcleanr.
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+             and sex columns
+  bmi_percentiles: (DataFrame) CDC growth chart containing BMI percentiles for age
+  subjid: (String) Id of the individual to plot
+  """
+  individual = merged_df[(merged_df.subjid == subjid) & (merged_df.param == param)]
+  fig, ax = plt.subplots(1, 2, sharey='row')
+  if param == 'WEIGHTKG': percentile_df = wt_df 
+  elif param == 'BMI': percentile_df = bmi_df 
+  else: percentile_df = ht_df
+  percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
+                                        (percentile_df.age_years > individual.age.min()) &
+                                        (percentile_df.age_years < individual.age.max())]
+  ax[0].plot(individual.age, individual.measurement)
+  ax[0].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[0].plot(percentile_window.age_years, percentile_window.P95, color='k')
+
+  ax[0].set(xlabel='age (y)', ylabel=param,
+        title=(param + ' All Values'))
+  ax[0].grid()
+
+  included_individual = individual[individual.clean_value.isin(['Include'])]
+  ax[1].plot(included_individual.age, included_individual.measurement)
+  ax[1].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[1].plot(percentile_window.age_years, percentile_window.P95, color='k')
+
+  ax[1].set(xlabel='age (y)', ylabel='',
+        title=(param + ' Cleaned'))
   ax[1].grid()
   return plt
 

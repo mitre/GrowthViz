@@ -27,7 +27,7 @@
 # 
 # Jupyter Notebooks have documentation cells, such as this one, and code cells like the one below. The notebook server can runs the code and provides results (if applicable) back in the notebook. The following code cell loads the libraries necessary for the tool to work. If you would like to incorporate other Python libraries to assist in data exploration, they can be added here. Removing libraries from this cell will very likely break the tool.
 
-# In[1]:
+# In[183]:
 
 
 from __future__ import print_function
@@ -285,7 +285,7 @@ widgets.VBox([g, out])
 # 
 # In this chart, the blue line represents all measurements for an individual. Any values marked for exclusion are represented with a red x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle, unless `include_carry_forward` is set to False, when they will also be represented as a red x.
 
-# In[114]:
+# In[135]:
 
 
 # using these BMI bands: https://www.cdc.gov/obesity/adult/defining.html
@@ -306,7 +306,7 @@ interactive(charts.overlap_view, obs_df=fixed(obs_wbmi),
 cleaned_obs[(cleaned_obs['measurement'] < 25) & (cleaned_obs['clean_value'] == 'Include')] 143216308 # 14746834 is an example with the underweight line
 
 
-# In[115]:
+# In[136]:
 
 
 # display all charts at the same time
@@ -349,15 +349,24 @@ interactive(charts.overlap_view_double, obs_df=fixed(obs),
 # 
 # Next, the tool creates a series that contains the unique set of `subjid`s and stores that in `uniq_ids`.
 
-# In[117]:
+# In[195]:
 
 
 # identify people with more than one record per category
-cleaned_obs['cat_count'] = cleaned_obs.groupby(['subjid', 'param'])['age'].transform('count')
-cleaned_obs['one_rec'] = np.where(cleaned_obs['cat_count'] == 1, 1, 0)
-cleaned_obs['any_ones'] = cleaned_obs.groupby(['subjid'])['one_rec'].transform('max')
-cleaned_obs_mult = cleaned_obs[cleaned_obs['any_ones'] == 0]
-uniq_ids = cleaned_obs_mult['subjid'].unique()
+obs_wbmi['cat_count'] = obs_wbmi.groupby(['subjid', 'param'])['age'].transform('count')
+obs_wbmi['one_rec'] = np.where(obs_wbmi['cat_count'] == 1, 1, 0)
+obs_wbmi['any_ones'] = obs_wbmi.groupby(['subjid'])['one_rec'].transform('max')
+obs_wbmi['max'] = obs_wbmi.groupby('subjid')['age'].transform('max')
+obs_wbmi['min'] = obs_wbmi.groupby('subjid')['age'].transform('min')
+obs_wbmi['range'] = np.ceil(obs_wbmi['max']) - np.floor(obs_wbmi['min'])
+obs_wbmi_mult = obs_wbmi[obs_wbmi['any_ones'] == 0]
+uniq_ids = obs_wbmi_mult['subjid'].unique()
+
+
+# In[146]:
+
+
+cleaned_obs.head(10)
 
 
 # From the series of unique ids, the following cell randonly selects 25 individuals and assigns them to `sample`.
@@ -383,11 +392,11 @@ cleaned_obs2[cleaned_obs2['subjid'] == 127292887]
 
 # The `sample` can be passed into the `charts.five_by_five_view` function which will create a [small multiple](https://en.wikipedia.org/wiki/Small_multiple) plot for each of the individuals. Exclusions, including carry forwards, will be represented by a red x.
 
-# In[125]:
+# In[196]:
 
 
 # need to incorporate BMI here
-charts.five_by_five_view(cleaned_obs, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles, bmi_percentiles)
+charts.five_by_five_view(obs_wbmi, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles, bmi_percentiles)
 
 
 # # Building a Different Sample
@@ -415,7 +424,7 @@ charts.five_by_five_view(cleaned_obs, ewma_sample, 'WEIGHTKG', wt_percentiles, h
 # this currently pulls the 25 largest observations, not individuals - fix this in following cell
 
 
-# In[126]:
+# In[147]:
 
 
 def edge25(cleaned_obs, category, sort_order, param):
@@ -424,35 +433,46 @@ def edge25(cleaned_obs, category, sort_order, param):
         filtered_by_cat = filtered_by_cat.nlargest(25, 'measurement')
     else:
         filtered_by_cat = filtered_by_cat.nsmallest(25, 'measurement')
-    return charts.five_by_five_view(cleaned_obs, filtered_by_cat.subjid.values, param, wt_percentiles, ht_percentiles)
+    return charts.five_by_five_view(cleaned_obs, filtered_by_cat.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles)
     
 interact(edge25, cleaned_obs = fixed(cleaned_obs), category = cleaned_obs.clean_cat.unique(), 
          sort_order = ['largest', 'smallest'], param = ['WEIGHTKG', 'HEIGHTCM'])
 
 
-# In[127]:
+# In[207]:
 
 
-def edge25(cleaned_obs, category, sort_order, param):
+def edge25(cleaned_obs, category, group, sort_order, param):
     filtered_by_cat = cleaned_obs[(cleaned_obs.clean_cat == category) & (cleaned_obs.param == param)]
     # get list of relevant IDs
-    filtered_sum = filtered_by_cat.groupby('subjid', as_index=False)['measurement'].agg({'min':np.min, 'max':np.max})
-    if sort_order == 'largest':
-        filtered_sum = filtered_sum.nlargest(25, 'max')
+    filtered_sum = filtered_by_cat.groupby('subjid', as_index=False).agg(max_measure=('measurement', 'max'), min_measure=('measurement', 'min'), start_age=('age', 'min'), axis_range=('range', 'mean'))
+    if group == 'largest':
+        filtered_sum = filtered_sum.nlargest(25, 'max_measure')
     else:
-        filtered_sum = filtered_sum.nsmallest(25, 'min')
-    #filtered_extreme = cleaned_obs.merge(filtered_sum, on='subjid', how='right')
+        filtered_sum = filtered_sum.nsmallest(25, 'min_measure')
+    filtered_sum.sort_values(by=[sort_order, 'subjid'], inplace=True)
     return charts.five_by_five_view(cleaned_obs, filtered_sum.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles)
     
-interact(edge25, cleaned_obs = fixed(cleaned_obs_mult), category = cleaned_obs.clean_cat.unique(), 
-         sort_order = ['largest', 'smallest'], param = ['WEIGHTKG', 'HEIGHTCM'])
+interact(edge25, cleaned_obs = fixed(obs_wbmi_mult), category = cleaned_obs.clean_cat.unique(), 
+         group = ['largest', 'smallest'], sort_order = ['max_measure', 'min_measure', 'start_age', 'axis_range'], param = ['WEIGHTKG', 'HEIGHTCM', 'BMI'])
 
 
 # # Visualizing Changes in Trajectory
 # 
 # The `charts.bmi_with_percentiles` function displays a chart showing BMI for an individual over time. Black bands representing the 5th and 95th BMI percentile for age and sex are shown with the individual's BMI shown in blue. The plot on the left represents all values. The plot on the right is only included values.
 
-# In[130]:
+# In[216]:
+
+
+all_ids = obs_wbmi['subjid'].unique()
+val = 143216308 if 143216308 in all_ids else np.random.choice(all_ids, size=1, replace=False)
+interact(charts.param_with_percentiles, merged_df = fixed(obs_wbmi),
+         subjid = widgets.BoundedIntText(value=val, min=0, max=1000000000,
+                                         description='Subject ID:',disabled=False),
+         param = ['BMI', 'WEIGHTKG', 'HEIGHTCM'], wt_df = fixed(wt_percentiles), ht_df = fixed(ht_percentiles), bmi_df = fixed(bmi_percentiles))
+
+
+# In[214]:
 
 
 all_ids = cleaned_obs_mult['subjid'].unique()
