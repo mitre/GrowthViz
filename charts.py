@@ -76,6 +76,18 @@ def setup_merged_df(obs_df):
   clean_column_names['include_both'] = clean_column_names['include_height'] & clean_column_names['include_weight']
   return clean_column_names
 
+def setup_bmi(merged_df, obs):
+  data = merged_df[['id', 'subjid', 'sex', 'age_years', 'agedays', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
+  def label_incl(row):
+    if (row['include_both'] == True): return 'Include'
+    elif (row['weight_cat'] == 'Implausible') | (row['height_cat'] == 'Implausible'): return 'Implausible'
+    else: return 'Only Wt or Ht'
+  incl_col = data.apply(lambda row: label_incl(row), axis=1)
+  data = data.assign(clean_cat=incl_col.values)
+  data['param'] = 'BMI'
+  data.rename(columns={'bmi':'measurement'}, inplace=True)
+  return pd.concat([obs, data])
+
 def add_mzscored_to_merged_df(merged_df, pctls): #merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
   #merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
   #merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
@@ -346,6 +358,15 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   # Reset figsize to default
   plt.rcParams['figure.figsize'] = [6.4, 4.8]
   return fig
+
+def mult_obs(obs):
+  obs['cat_count'] = obs.groupby(['subjid', 'param'])['age'].transform('count')
+  obs['one_rec'] = np.where(obs['cat_count'] == 1, 1, 0)
+  obs['any_ones'] = obs.groupby(['subjid'])['one_rec'].transform('max')
+  obs['max'] = obs.groupby('subjid')['age'].transform('max')
+  obs['min'] = obs.groupby('subjid')['age'].transform('min')
+  obs['range'] = np.ceil(obs['max']) - np.floor(obs['min'])
+  return obs[obs['any_ones'] == 0]
 
 def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df):
   """
