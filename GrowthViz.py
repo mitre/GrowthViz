@@ -27,7 +27,7 @@
 # 
 # Jupyter Notebooks have documentation cells, such as this one, and code cells like the one below. The notebook server can runs the code and provides results (if applicable) back in the notebook. The following code cell loads the libraries necessary for the tool to work. If you would like to incorporate other Python libraries to assist in data exploration, they can be added here. Removing libraries from this cell will very likely break the tool.
 
-# In[183]:
+# In[1]:
 
 
 from __future__ import print_function
@@ -128,64 +128,25 @@ obs = charts.setup_individual_obs_df(cleaned_obs)
 
 # adult percentiles
 percentiles = pd.read_csv("../vdsmeasures.csv", encoding ='latin1')
-percentiles.head(10)
+percentiles_clean = charts.setup_percentiles(percentiles)
+
+# save out smoothed percentiles
+percentiles_clean.drop(columns={'sd'}).to_csv('smoothed_percentiles.csv')
+
+# separate percentiles into different data files
+bmi_percentiles = percentiles_clean[percentiles_clean['param'] == 'BMI']
+wt_percentiles = percentiles_clean[percentiles_clean['param'] == 'WEIGHTKG']
+ht_percentiles = percentiles_clean[percentiles_clean['param'] == 'HEIGHTCM']
+
+percentiles_clean.head(15)
 
 
 # In[11]:
 
 
-# expand decade rows into one row per year
-percentiles = percentiles[percentiles['Age (All race and Hispanic-origin groups)'] != '20 and over']
-percentiles['Age_low'] = np.where(percentiles['Age_low'] == 20, 18, percentiles['Age_low'])
-percentiles['range'] = percentiles['Age_high'] - percentiles['Age_low'] + 1
-dta = pd.DataFrame((np.repeat(percentiles.values, percentiles['range'], axis=0)), columns=percentiles.columns)
-dta['count'] = dta.groupby(['Sex', 'Measure', 'Age_low', 'Age_high']).cumcount() # ['range'].transform('cumcount')
-dta['age_years'] = dta['Age_low'] + dta['count']
-
-# add standard deviation and other values
-dta['sqrt'] = np.sqrt(pd.to_numeric(dta['Number of examined persons']))
-dta['sd'] = dta['Standard error of the mean'] * dta['sqrt']
-dta['sex'] = np.where(dta['Sex'] == 'Male', 0, 1)
-dta.rename(columns={'Measure':'param'}, inplace=True)
-dta.drop(columns=['Age (All race and Hispanic-origin groups)', 'Sex', 'Age_low', 'sqrt', 'Standard error of the mean',
-                  'Age_high', 'range', 'count', 'Number of examined persons'], inplace=True)
-
-# smooth percentiles between X9-(X+1)1 (i.e., 29-31)
-dta['decade'] = np.where(dta['age_years'] == (round(dta['age_years'].astype(float), -1)), 1, 0)
-mcol_list = ['Mean', 'sd', 'P5', 'P10', 'P15', 'P25', 'P50', 'P75', 'P85', 'P90', 'P95']
-for col in mcol_list:
-    dta[col] = np.where((dta['decade'] == 1) & (dta['age_years'] < 110), (dta[col] + dta[col].shift(1))/2, dta[col])
-
-dta.drop(columns={'decade'}, inplace=True)
-col_list = ['param', 'sex', 'age_years'] + mcol_list
-dta = dta.reindex(columns=col_list)
-dta.drop(columns={'sd'}).to_csv('smoothed_percentiles.csv')
-
-# separate percentiles into different data files
-bmi_percentiles = dta[dta['param'] == 'BMI']
-wt_percentiles = dta[dta['param'] == 'WEIGHTKG']
-ht_percentiles = dta[dta['param'] == 'HEIGHTCM']
-
-dta.head(15)
-
-
-# In[12]:
-
-
 # create mean/sd values to merge to adult data for z-score calculations
-dta_forz_long = dta[['Mean', 'sex', 'param', 'age_years', 'sd']]
-
-def label_param (row):
-   if row['param'] == 'WEIGHTKG' : return 'weight'
-   if row['param'] == 'BMI' : return 'bmi'
-   if row['param'] == 'HEIGHTCM' : return 'height'
-
-dta_forz_long['param2'] = dta_forz_long.apply (lambda row: label_param(row), axis=1)
-dta_forz = dta_forz_long.pivot_table(index=['sex', 'age_years'], columns='param2', values=['Mean', 'sd'], aggfunc='first') #.reset_index()
-dta_forz = dta_forz.sort_index(axis=1, level=1)
-dta_forz.columns = [f'{x}_{y}' for x,y in dta_forz.columns]
-dta_forz = dta_forz.reset_index()
-dta_forz.head()
+percentiles_long = charts.setup_percentile_zscore(percentiles_clean)
+percentiles_long.head()
 
 
 # In an earlier cell, the tool creates the `obs` DataFrame. In that structure there is one measurement, either height or weight, per row. In this cell, the `charts.setup_merged_df` function will create a DataFrame where a height observation and weight observation for the same `subjid` on the same `agedays` are combined into a single row. Several new columns are added to the resulting DataFrame:
@@ -203,30 +164,40 @@ dta_forz.head()
 # 
 # The result is stored in `merged_df`.
 
-# In[13]:
+# In[82]:
 
 
 merged_df = charts.setup_merged_df(obs)
 merged_df.head()
 
 
-# In[14]:
+# In[92]:
 
 
 # create BMI data to add below for individual trajectories
-for_bmi = merged_df[['id', 'subjid', 'sex', 'age_years', 'agedays', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat']]
-for_bmi['clean_value'] = np.where((for_bmi['weight_cat'] == 'Include') & (for_bmi['height_cat'] == 'Include'), "Include", "Implausible")
-for_bmi['clean_cat'] = for_bmi['clean_value']
+for_bmi = merged_df[['id', 'subjid', 'sex', 'age_years', 'agedays', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
+def label_incl(row):
+    if (row['include_both'] == True): return 'Include'
+    elif (row['weight_cat'] == 'Implausible') | (row['height_cat'] == 'Implausible'): return 'Implausible'
+    else: return 'Only Wt or Ht'
+incl_col = for_bmi.apply(lambda row: label_incl(row), axis=1)
+for_bmi = for_bmi.assign(clean_cat=incl_col.values)
 for_bmi['param'] = 'BMI'
 for_bmi.rename(columns={'bmi':'measurement'}, inplace=True)
 obs_wbmi = pd.concat([obs, for_bmi])
+#print(for_bmi.groupby('clean_cat')['age'].count())
+#print(merged_df.groupby(['include_weight', 'include_height'])['age'].count())
+#print(obs.groupby(['param', 'clean_cat'])['age'].count())
+#for_bmi[for_bmi['clean_cat'] == 'Implausible'].head(20)
+
+#for_bmi_impl = for_bmi[for_bmi['clean_cat'] == 'Implausible']
 
 
 # ## Exclusion Information
 # 
 # The following shows the counts of the values for inclusion/exclusion along with the percentages of 
 
-# In[15]:
+# In[84]:
 
 
 charts.exclusion_information(obs)
@@ -236,10 +207,10 @@ charts.exclusion_information(obs)
 # 
 # This next cell creates an interactive tool that can be used to explore patients. The `charts.add_mzscored_to_merged_df` function will add modified Z Scores for height, weight and BMI to `merged_df`. The tool uses [Qgrid](https://github.com/quantopian/qgrid) to create the interactive table. Clicking on a row will create a plot for the individual below the table.
 
-# In[16]:
+# In[85]:
 
 
-mdf = charts.add_mzscored_to_merged_df(merged_df, dta_forz) #wt_percentiles, ht_percentiles, bmi_percentiles)
+mdf = charts.add_mzscored_to_merged_df(merged_df, percentiles_long) #wt_percentiles, ht_percentiles, bmi_percentiles)
 mdf['wtz'] = (mdf['weight'] - mdf['Mean_weight'])/mdf['sd_weight']
 mdf['htz'] = (mdf['height'] - mdf['Mean_height'])/mdf['sd_height']
 mdf['BMIz'] = (mdf['bmi'] - mdf['Mean_bmi'])/mdf['sd_bmi']
@@ -285,7 +256,7 @@ widgets.VBox([g, out])
 # 
 # In this chart, the blue line represents all measurements for an individual. Any values marked for exclusion are represented with a red x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle, unless `include_carry_forward` is set to False, when they will also be represented as a red x.
 
-# In[135]:
+# In[115]:
 
 
 # using these BMI bands: https://www.cdc.gov/obesity/adult/defining.html
@@ -300,13 +271,19 @@ interactive(charts.overlap_view, obs_df=fixed(obs_wbmi),
             wt_df=fixed(wt_percentiles), bmi_df=fixed(bmi_percentiles), ht_df=fixed(ht_percentiles))
 
 
-# In[84]:
+# In[44]:
 
 
-cleaned_obs[(cleaned_obs['measurement'] < 25) & (cleaned_obs['clean_value'] == 'Include')] 143216308 # 14746834 is an example with the underweight line
+obs_wbmi.head(15)
 
 
-# In[136]:
+# In[90]:
+
+
+obs_wbmi[obs_wbmi['subjid'] == 143216308] # 14746834 is an example with the underweight line
+
+
+# In[110]:
 
 
 # display all charts at the same time
@@ -320,7 +297,7 @@ charts.overlap_view_all(obs_df=obs_wbmi, id=val, param='HEIGHTCM', include_carry
             include_percentiles=True, wt_df=wt_percentiles, bmi_df=bmi_percentiles, ht_df=ht_percentiles)
 
 
-# In[63]:
+# In[48]:
 
 
 obs_wbmi[obs_wbmi['subjid'] == 25477664].head()
@@ -330,7 +307,7 @@ obs_wbmi[obs_wbmi['subjid'] == 25477664].head()
 # 
 # In this chart, the dark blue line represents all weight measurements for an individual and the dark red represents all height measurements for an individual. Any values marked for exclusion are represented with a black x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle. All lines and symbols can be excluded by unchecking the checkboxes above the chart.
 
-# In[116]:
+# In[49]:
 
 
 all_ids = cleaned_obs['subjid'].unique()
@@ -349,7 +326,7 @@ interactive(charts.overlap_view_double, obs_df=fixed(obs),
 # 
 # Next, the tool creates a series that contains the unique set of `subjid`s and stores that in `uniq_ids`.
 
-# In[195]:
+# In[50]:
 
 
 # identify people with more than one record per category
@@ -363,7 +340,7 @@ obs_wbmi_mult = obs_wbmi[obs_wbmi['any_ones'] == 0]
 uniq_ids = obs_wbmi_mult['subjid'].unique()
 
 
-# In[146]:
+# In[51]:
 
 
 cleaned_obs.head(10)
@@ -371,19 +348,19 @@ cleaned_obs.head(10)
 
 # From the series of unique ids, the following cell randonly selects 25 individuals and assigns them to `sample`.
 
-# In[118]:
+# In[52]:
 
 
 sample = np.random.choice(uniq_ids, size=25, replace=False)
 
 
-# In[119]:
+# In[53]:
 
 
 sample
 
 
-# In[120]:
+# In[54]:
 
 
 cleaned_obs2 = cleaned_obs.drop(columns=['reason', 'clean_value', 'site_key', 'site_location', 'event_date', 'agedays', 'ethnicity'])
@@ -392,7 +369,7 @@ cleaned_obs2[cleaned_obs2['subjid'] == 127292887]
 
 # The `sample` can be passed into the `charts.five_by_five_view` function which will create a [small multiple](https://en.wikipedia.org/wiki/Small_multiple) plot for each of the individuals. Exclusions, including carry forwards, will be represented by a red x.
 
-# In[196]:
+# In[112]:
 
 
 # need to incorporate BMI here
@@ -405,7 +382,7 @@ charts.five_by_five_view(obs_wbmi, sample, 'HEIGHTCM', wt_percentiles, ht_percen
 # 
 # The cell below selects all observations with a weight exclusion of "Exclude-EWMA-Extreme". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results.
 
-# In[20]:
+# In[56]:
 
 
 # TO DO WHEN WE HAVE MORE EXCLUSION CATEGORIES
@@ -418,13 +395,13 @@ charts.five_by_five_view(cleaned_obs, ewma_sample, 'WEIGHTKG', wt_percentiles, h
 # 
 # The following cell uses the same function as above to create a 5 x 5 set of small multiple charts, but selects the top/bottom 25 individuals by growthcleanr category.
 
-# In[122]:
+# In[57]:
 
 
 # this currently pulls the 25 largest observations, not individuals - fix this in following cell
 
 
-# In[147]:
+# In[113]:
 
 
 def edge25(cleaned_obs, category, sort_order, param):
@@ -439,7 +416,7 @@ interact(edge25, cleaned_obs = fixed(cleaned_obs), category = cleaned_obs.clean_
          sort_order = ['largest', 'smallest'], param = ['WEIGHTKG', 'HEIGHTCM'])
 
 
-# In[207]:
+# In[114]:
 
 
 def edge25(cleaned_obs, category, group, sort_order, param):
@@ -461,7 +438,7 @@ interact(edge25, cleaned_obs = fixed(obs_wbmi_mult), category = cleaned_obs.clea
 # 
 # The `charts.bmi_with_percentiles` function displays a chart showing BMI for an individual over time. Black bands representing the 5th and 95th BMI percentile for age and sex are shown with the individual's BMI shown in blue. The plot on the left represents all values. The plot on the right is only included values.
 
-# In[216]:
+# In[117]:
 
 
 all_ids = obs_wbmi['subjid'].unique()
@@ -472,7 +449,7 @@ interact(charts.param_with_percentiles, merged_df = fixed(obs_wbmi),
          param = ['BMI', 'WEIGHTKG', 'HEIGHTCM'], wt_df = fixed(wt_percentiles), ht_df = fixed(ht_percentiles), bmi_df = fixed(bmi_percentiles))
 
 
-# In[214]:
+# In[61]:
 
 
 all_ids = cleaned_obs_mult['subjid'].unique()
@@ -494,7 +471,7 @@ interact(charts.bmi_with_percentiles, merged_df = fixed(merged_df),
 # The buttons can be used to add or remove columns from the table.
 # The checkbox includes "missing" values (note: this will impact the raw columns as missing values may cause BMI values of infinity since they divide by 0 when missing). Missing values are not included by default.
 
-# In[131]:
+# In[62]:
 
 
 min_toggle = widgets.ToggleButton(value=True, description='Minimum BMI', 
