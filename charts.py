@@ -7,7 +7,7 @@ from IPython.display import FileLink, FileLinks, Markdown
 def setup_individual_obs_df(obs_df):
   obs_df.rename(columns={'result':'clean_value'}, inplace=True)
   obs_df['clean_cat'] = obs_df['clean_value'].astype('category')
-  obs_df['age'] = obs_df['agedays'] / 365
+  obs_df['age'] = obs_df['age_years'] #obs_df['agedays'] / 365
   obs_df['include'] = obs_df.clean_value.eq("Include")
   return obs_df
 
@@ -55,12 +55,10 @@ def setup_merged_df(obs_df):
   obs_df['weight'] = np.where(obs_df['param'] == 'WEIGHTKG', obs_df['measurement'], np.NaN)
   heights = obs_df[obs_df.param == 'HEIGHTCM']
   weights = obs_df[obs_df.param == 'WEIGHTKG']
-  merged = heights.merge(weights, on=['subjid', 'agedays', 'sex'], how='outer')
+  merged = heights.merge(weights, on=['subjid', 'age_years', 'sex'], how='outer')
   only_needed_columns = merged.drop(columns=['param_x', 'measurement_x', 'clean_value_x',
                                              'age_x', 'weight_x', 'id_y', 'param_y',
-                                             'measurement_y', 'clean_value_y', 'height_y',
-                                             'ethnicity_x', 'ethnicity_y', 'event_date_x', 'event_date_y', 'site_key_x', 'site_key_y',
-                                             'site_location_x', 'site_location_y', 'age_years_x', 'reason_x'])
+                                             'measurement_y', 'clean_value_y', 'height_y', 'reason_x'])
   clean_column_names = only_needed_columns.rename(columns={'clean_cat_x': 'height_cat',
                                                            'include_x': 'include_height',
                                                            'height_x': 'height',
@@ -77,7 +75,7 @@ def setup_merged_df(obs_df):
   return clean_column_names
 
 def setup_bmi(merged_df, obs):
-  data = merged_df[['id', 'subjid', 'sex', 'age_years', 'agedays', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
+  data = merged_df[['id', 'subjid', 'sex', 'age_years', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
   def label_incl(row):
     if (row['include_both'] == True): return 'Include'
     elif (row['weight_cat'] == 'Implausible') | (row['height_cat'] == 'Implausible'): return 'Implausible'
@@ -189,11 +187,11 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
   filter = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
   excluded_selected_param = selected_param[~filter]
   included_selected_param = selected_param[filter]
-  selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3, zorder=2) # could instead have the marker on the all measurements line, a little messier
+  selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the all measurements line, a little messier
   selected_param_plot.plot(included_selected_param['age'],
-                           included_selected_param['measurement'], c='y', linestyle='-.', lw=3, marker='o', label='Included Only', zorder=3) # could also try violet
+                           included_selected_param['measurement'], c='y', linestyle='-.', lw=3, marker='o', label='Included Only') # could also try violet
   selected_param_plot.scatter(x=excluded_selected_param.age,
-                              y=excluded_selected_param.measurement, c='r', marker="x", zorder=1)
+                              y=excluded_selected_param.measurement, c='r', marker="x", zorder=3)
   xmin = math.floor(individual.age.min())
   xmax = math.ceil(individual.age.max())
   selected_param_plot.set_xlim(xmin, xmax)
@@ -507,7 +505,7 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
   #   working_set = working_set.nlargest(10, field)
   # else:
   #   working_set = working_set.nsmallest(10, field)
-  working_set = working_set.drop(columns=['agedays', 'include_height',
+  working_set = working_set.drop(columns=['include_height',
       'include_weight', 'include_both', 'rounded_age'])
   working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
   working_set['age'] = working_set.age.round(decimals=2)
