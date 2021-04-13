@@ -1,59 +1,101 @@
 import pandas as pd
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 from IPython.display import FileLink, FileLinks, Markdown
 
 def setup_individual_obs_df(obs_df):
+  obs_df.rename(columns={'result':'clean_value'}, inplace=True)
   obs_df['clean_cat'] = obs_df['clean_value'].astype('category')
-  obs_df['age'] = obs_df['agedays'] / 365
+  obs_df['age'] = obs_df['age_years'] #obs_df['agedays'] / 365
   obs_df['include'] = obs_df.clean_value.eq("Include")
   return obs_df
 
 def setup_percentiles(percentiles):
-  percentiles['Agemos'] = pd.to_numeric(percentiles['Agemos'], errors='coerce')
-  percentiles['P5'] = pd.to_numeric(percentiles['P5'], errors='coerce')
-  percentiles['P95'] = pd.to_numeric(percentiles['P95'], errors='coerce')
-  percentiles['age'] = percentiles['Agemos'] / 12
-  percentiles['Sex'] = pd.to_numeric(percentiles['Sex'], errors='coerce')
-  percentiles['L'] = pd.to_numeric(percentiles['L'], errors='coerce')
-  percentiles['M'] = pd.to_numeric(percentiles['M'], errors='coerce')
-  percentiles['S'] = pd.to_numeric(percentiles['S'], errors='coerce')
-  # Values by CDC (1=male; 2=female) differ from growthcleanr
-  # which uses a numeric value of 0 (male) or 1 (female).
-  # This aligns things to the growthcleanr values
-  percentiles['Sex'] = percentiles['Sex'] - 1
-  return percentiles
+  # expand decade rows into one row per year
+  pct = percentiles[percentiles['Age (All race and Hispanic-origin groups)'] != '20 and over'].copy()
+  pct.loc[pct['Age_low'] == 20, 'Age_low'] = 18
+  range_col = pct.apply(lambda row: row.Age_high - row.Age_low + 1, axis=1)
+  pct = pct.assign(range=range_col.values)
+  dta = pd.DataFrame((np.repeat(pct.values, pct['range'], axis=0)), columns=pct.columns)
+  dta['count'] = dta.groupby(['Sex', 'Measure', 'Age_low', 'Age_high']).cumcount() # ['range'].transform('cumcount')
+  dta['age_years'] = dta['Age_low'] + dta['count']
+  # add standard deviation and other values
+  dta['sqrt'] = np.sqrt(pd.to_numeric(dta['Number of examined persons']))
+  dta['sd'] = dta['Standard error of the mean'] * dta['sqrt']
+  dta['sex'] = np.where(dta['Sex'] == 'Male', 0, 1)
+  dta.rename(columns={'Measure':'param'}, inplace=True)
+  dta.drop(columns=['Age (All race and Hispanic-origin groups)', 'Sex', 'Age_low', 'sqrt', 'Standard error of the mean',
+                  'Age_high', 'range', 'count', 'Number of examined persons'], inplace=True)
+  # smooth percentiles between X9-(X+1)1 (i.e., 29-31)
+  dta['decade'] = np.where(dta['age_years'] == (round(dta['age_years'].astype(float), -1)), 1, 0)
+  mcol_list = ['Mean', 'sd', 'P5', 'P10', 'P15', 'P25', 'P50', 'P75', 'P85', 'P90', 'P95']
+  for col in mcol_list:
+    dta[col] = np.where((dta['decade'] == 1) & (dta['age_years'] < 110), (dta[col] + dta[col].shift(1))/2, dta[col])
+  dta.drop(columns={'decade'}, inplace=True)
+  col_list = ['param', 'sex', 'age_years'] + mcol_list
+  dta = dta.reindex(columns=col_list)
+  return dta
+
+def setup_percentile_zscore(percentiles_clean):
+  dta_forz_long = percentiles_clean[['Mean', 'sex', 'param', 'age_years', 'sd']]
+  def label_param (row):
+    if row['param'] == 'WEIGHTKG' : return 'weight'
+    if row['param'] == 'BMI' : return 'bmi'
+    if row['param'] == 'HEIGHTCM' : return 'height'
+  param_col = dta_forz_long.apply(lambda row: label_param(row), axis=1)
+  dta_forz_long = dta_forz_long.assign(param2=param_col.values)
+  dta_forz = dta_forz_long.pivot_table(index=['sex', 'age_years'], columns='param2', values=['Mean', 'sd'], aggfunc='first') #.reset_index()
+  dta_forz = dta_forz.sort_index(axis=1, level=1)
+  dta_forz.columns = [f'{x}_{y}' for x,y in dta_forz.columns]
+  return dta_forz.reset_index()
 
 def setup_merged_df(obs_df):
   obs_df['height'] = np.where(obs_df['param'] == 'HEIGHTCM', obs_df['measurement'], np.NaN)
   obs_df['weight'] = np.where(obs_df['param'] == 'WEIGHTKG', obs_df['measurement'], np.NaN)
   heights = obs_df[obs_df.param == 'HEIGHTCM']
   weights = obs_df[obs_df.param == 'WEIGHTKG']
-  merged = heights.merge(weights, on=['subjid', 'agedays', 'sex'], how='outer')
+  merged = heights.merge(weights, on=['subjid', 'age_years', 'sex'], how='outer')
   only_needed_columns = merged.drop(columns=['param_x', 'measurement_x', 'clean_value_x',
                                              'age_x', 'weight_x', 'id_y', 'param_y',
-                                             'measurement_y', 'clean_value_y', 'height_y'])
+                                             'measurement_y', 'clean_value_y', 'height_y', 'reason_x'])
   clean_column_names = only_needed_columns.rename(columns={'clean_cat_x': 'height_cat',
                                                            'include_x': 'include_height',
                                                            'height_x': 'height',
                                                            'clean_cat_y': 'weight_cat',
                                                            'age_y': 'age',
                                                            'include_y': 'include_weight',
-                                                           'weight_y': 'weight'})
+                                                           'weight_y': 'weight',
+                                                           'age_years_y':'age_years', 
+                                                           'reason_y':'reason', 
+                                                           'id_x':'id'})
   clean_column_names['bmi'] = clean_column_names['weight'] / ((clean_column_names['height'] / 100) ** 2)
   clean_column_names['rounded_age'] = np.around(clean_column_names.age)
   clean_column_names['include_both'] = clean_column_names['include_height'] & clean_column_names['include_weight']
   return clean_column_names
 
-def add_mzscored_to_merged_df(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
-  merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
-  merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
-  merged_df = calculate_modified_zscore(merged_df, bmi_percentiles, 'bmi')
+def setup_bmi(merged_df, obs):
+  data = merged_df[['id', 'subjid', 'sex', 'age_years', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
+  def label_incl(row):
+    if (row['include_both'] == True): return 'Include'
+    elif (row['weight_cat'] == 'Implausible') | (row['height_cat'] == 'Implausible'): return 'Implausible'
+    else: return 'Only Wt or Ht'
+  incl_col = data.apply(lambda row: label_incl(row), axis=1)
+  data = data.assign(clean_cat=incl_col.values)
+  data['param'] = 'BMI'
+  data.rename(columns={'bmi':'measurement'}, inplace=True)
+  return pd.concat([obs, data])
+
+def add_mzscored_to_merged_df(merged_df, pctls): #merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
+  #merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
+  #merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
+  #merged_df = calculate_modified_zscore(merged_df, bmi_percentiles, 'bmi')
+  merged_df = merged_df.merge(pctls, on=['sex', 'age_years'], how='left')
   return merged_df
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
               include_std=True, include_mean_diff=True,
-              include_count=True, age_range=[2, 20], include_missing=False):
+              include_count=True, age_range=[20, 65], include_missing=False):
   """
   Computes summary statistics for BMI. Clean values are for BMIs computed when both the height
   and weight values are categorized by growthcleanr as "Include". Raw values are computed for
@@ -122,7 +164,7 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
     out.append_display_data(Markdown("## Male"))
     out.append_display_data(merged_stats.loc['M'].style.format(formatters))
 
-def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df):
+def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, bmi_df, ht_df):
   """
   Creates a chart showing the trajectory for an individual with all values present. All values will
   be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
@@ -142,25 +184,93 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
   """
   individual = obs_df[obs_df.subjid == subjid]
   selected_param = individual[individual.param == param]
-  filter = selected_param.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
+  filter = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
   excluded_selected_param = selected_param[~filter]
   included_selected_param = selected_param[filter]
-  selected_param_plot = selected_param.plot.line(x='age', y='measurement')
+  selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the all measurements line, a little messier
   selected_param_plot.plot(included_selected_param['age'],
-                           included_selected_param['measurement'], c='y', linestyle='-.')
+                           included_selected_param['measurement'], c='y', linestyle='-.', lw=3, marker='o', label='Included Only') # could also try violet
   selected_param_plot.scatter(x=excluded_selected_param.age,
-                              y=excluded_selected_param.measurement, c='r', marker="x")
+                              y=excluded_selected_param.measurement, c='r', marker="x", zorder=3)
+  xmin = math.floor(individual.age.min())
+  xmax = math.ceil(individual.age.max())
+  selected_param_plot.set_xlim(xmin, xmax)
   if include_carry_forward == True:
     carry_forward = selected_param[selected_param.clean_value == 'Exclude-Carried-Forward']
     selected_param_plot.scatter(x=carry_forward.age,
                                 y=carry_forward.measurement, c='c', marker="^")
   if include_percentiles == True:
-    percentile_df = wt_df if param == 'WEIGHTKG' else ht_df
-    percentile_window = percentile_df.loc[(percentile_df.Sex == individual.sex.min()) &
-                                          (percentile_df.age > individual.age.min()) &
-                                          (percentile_df.age < individual.age.max())]
-    selected_param_plot.plot(percentile_window.age, percentile_window.P5, color='k')
-    selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
+    if param == 'WEIGHTKG': percentile_df = wt_df 
+    elif param == 'BMI': percentile_df = bmi_df 
+    else: percentile_df = ht_df
+    percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
+                                          (percentile_df.age_years >= xmin) &
+                                          (percentile_df.age_years <= xmax)]
+    if (param == 'HEIGHTCM') | (param == 'WEIGHTKG'):
+      selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='grey', label='5th Percentile', linestyle='--', marker='_', zorder=1) 
+      selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='grey', label='95th Percentile', linestyle='dotted', zorder=1)
+    if param == 'BMI':
+      edge = (xmax - xmin)/30
+      x = 25
+      selected_param_plot.axhline(x, color='tan', zorder=1) 
+      selected_param_plot.text(xmax + edge, x, 'Overweight (25-30 BMI)', ha='left')
+      y = 30
+      selected_param_plot.axhline(y, color='tan', zorder=1) 
+      selected_param_plot.text(xmax + edge, y, 'Obesity (30+ BMI)', ha='left')
+      if included_selected_param['measurement'].min() < 25: # might want to make lower with more data
+        z = 18.5
+        selected_param_plot.axhline(z, color='pink', zorder=1) 
+        selected_param_plot.text(xmax + edge, z, 'Underweight (<18.5 BMI)', ha='left') 
+  selected_param_plot.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
+
+  return selected_param_plot
+
+def overlap_view_all(obs_df, id, param, include_carry_forward, include_percentiles, wt_df, bmi_df, ht_df):
+  """
+  FILL IN HERE
+  """
+  individual = obs_df[obs_df.subjid == id]
+  selected_param = individual[individual.param == param]
+  filter = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
+  excluded_selected_param = selected_param[~filter]
+  included_selected_param = selected_param[filter]
+  selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the included line
+  selected_param_plot.plot(included_selected_param['age'],
+                           included_selected_param['measurement'], c='y', linestyle='-.', label='Included Only', marker='o', lw=3) # could also try violet
+  selected_param_plot.scatter(x=excluded_selected_param.age,
+                              y=excluded_selected_param.measurement, c='r', marker="x", zorder=3)
+  xmin = math.floor(individual.age.min())
+  xmax = math.ceil(individual.age.max())
+  selected_param_plot.set_xlim(xmin, xmax)
+  if include_carry_forward == True:
+    carry_forward = selected_param[selected_param.clean_value == 'Exclude-Carried-Forward']
+    selected_param_plot.scatter(x=carry_forward.age,
+                                y=carry_forward.measurement, c='c', marker="^")
+  if include_percentiles == True:
+    if param == 'WEIGHTKG': percentile_df = wt_df 
+    elif param == 'BMI': percentile_df = bmi_df 
+    else: percentile_df = ht_df
+    percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
+                                          (percentile_df.age_years >= xmin) &
+                                          (percentile_df.age_years <= xmax)]
+    if (param == 'HEIGHTCM') | (param == 'WEIGHTKG'):
+      selected_param_plot.plot(percentile_window.age_years, percentile_window.P5, color='grey', label='5th Percentile', linestyle='--', marker='_', zorder=1) 
+      selected_param_plot.plot(percentile_window.age_years, percentile_window.P95, color='grey', label='95th Percentile', linestyle='dotted', zorder=1)
+    if param == 'BMI':
+      edge = (xmax - xmin)/30
+      x = 25
+      selected_param_plot.axhline(x, color='tan', zorder=1) 
+      selected_param_plot.text(xmax + edge, x, 'Overweight (25-30 BMI)', ha='left')
+      y = 30
+      selected_param_plot.axhline(y, color='tan', zorder=1) 
+      selected_param_plot.text(xmax + edge, y, 'Obesity (30+ BMI)', ha='left')
+      if included_selected_param['measurement'].min() < 25: # might want to make lower with more data
+        z = 18.5
+        selected_param_plot.axhline(z, color='pink', zorder=1) 
+        selected_param_plot.text(xmax + edge, z, 'Underweight (<18.5 BMI)', ha='left')  
+  selected_param_plot.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
+  plt.title(param)
+
   return selected_param_plot
 
 def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_values, show_trajectory_with_exclusions, include_carry_forward, include_percentiles, wt_df, ht_df):
@@ -194,31 +304,31 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   color = 'tab:red'
   color_secondary = 'tab:blue'
   ax1.set_ylim([50,180])
-  ax1.set_xlim([2,20])
+  ax1.set_xlim([20,65])
   ax1.set_xlabel('age (years)')
   ax1.set_ylabel('stature (cm)', color=color)
 
   ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
-  ax2.set_ylim([0,160])
+  ax2.set_ylim([40,160])
   ax2.set_ylabel('weight (kg)', color=color_secondary)  # we already handled the x-label with ax1
   if include_percentiles == True:
-    percentile_window = wt_df.loc[wt_df.Sex == individual.sex.min()]
-    ax2.plot(percentile_window.age, percentile_window.P5, color='lightblue')
-    ax2.plot(percentile_window.age, percentile_window.P10, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P25, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P50, color='lightblue')
-    ax2.plot(percentile_window.age, percentile_window.P75, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P90, color='lightblue', alpha=0.5)
-    ax2.plot(percentile_window.age, percentile_window.P95, color='lightblue')
-    percentile_window_ht = ht_df.loc[ht_df.Sex == individual.sex.min()]
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P5, color='pink')
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P10, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P25, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P50, color='pink')
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P75, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P90, color='pink', alpha=0.5)
-    ax1.plot(percentile_window_ht.age, percentile_window_ht.P95, color='pink')
+    percentile_window = wt_df.loc[wt_df.sex == individual.sex.min()]
+    ax2.plot(percentile_window.age_years, percentile_window.P5, color='lightblue')
+    ax2.plot(percentile_window.age_years, percentile_window.P10, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P25, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P50, color='lightblue')
+    ax2.plot(percentile_window.age_years, percentile_window.P75, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P90, color='lightblue', alpha=0.5)
+    ax2.plot(percentile_window.age_years, percentile_window.P95, color='lightblue')
+    percentile_window_ht = ht_df.loc[ht_df.sex == individual.sex.min()]
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P5, color='pink')
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P10, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P25, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P50, color='pink')
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P75, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P90, color='pink', alpha=0.5)
+    ax1.plot(percentile_window_ht.age_years, percentile_window_ht.P95, color='pink')
 
   if show_all_measurements == True:
     ax1.plot(height['age'], height['measurement'], color=color, label='stature')
@@ -247,7 +357,16 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   plt.rcParams['figure.figsize'] = [6.4, 4.8]
   return fig
 
-def five_by_five_view(obs_df, subjids, param, wt_df, ht_df):
+def mult_obs(obs):
+  obs['cat_count'] = obs.groupby(['subjid', 'param'])['age'].transform('count')
+  obs['one_rec'] = np.where(obs['cat_count'] == 1, 1, 0)
+  obs['any_ones'] = obs.groupby(['subjid'])['one_rec'].transform('max')
+  obs['max'] = obs.groupby('subjid')['age'].transform('max')
+  obs['min'] = obs.groupby('subjid')['age'].transform('min')
+  obs['range'] = np.ceil(obs['max']) - np.floor(obs['min'])
+  return obs[obs['any_ones'] == 0]
+
+def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df):
   """
   Creates a small multiples plot showing the growth trend for 25 individuals
 
@@ -260,18 +379,23 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df):
   fig, ax = plt.subplots(5, 5)
   for y in range(5):
     for x in range(5):
-      subjid = subjids[x + y*5]
+      subjid = subjids[x*5 + y]
       individual = obs_df[obs_df.subjid == subjid]
       selected_param = individual[individual.param == param]
       ax[x, y].plot(selected_param.age, selected_param.measurement, marker='.')
       excluded_selected_param = selected_param[selected_param.clean_value != 'Include']
       ax[x, y].scatter(excluded_selected_param.age, excluded_selected_param.measurement, c='r', marker='x')
-      percentile_df = wt_df if param == 'WEIGHTKG' else ht_df
-      percentile_window = percentile_df.loc[(percentile_df.Sex == individual.sex.min()) &
-                                            (percentile_df.age > individual.age.min()) &
-                                            (percentile_df.age < individual.age.max())]
-      ax[x, y].plot(percentile_window.age, percentile_window.P5, color='k')
-      ax[x, y].plot(percentile_window.age, percentile_window.P95, color='k')
+      if param == 'WEIGHTKG': 
+        percentile_df = wt_df 
+      elif param == 'BMI': 
+        percentile_df = bmi_df 
+      else: 
+        percentile_df = ht_df
+      percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
+                                            (percentile_df.age_years >= math.floor(individual.age.min())) &
+                                            (percentile_df.age_years <= math.ceil(individual.age.max()))]
+      ax[x, y].plot(percentile_window.age_years, percentile_window.P5, color='k', linestyle='dotted')
+      ax[x, y].plot(percentile_window.age_years, percentile_window.P95, color='k', linestyle='dotted')
       ax[x, y].set(title=subjid)
   fig.set_size_inches(20, 12)
   return plt.tight_layout()
@@ -290,23 +414,61 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
   """
   individual = merged_df[merged_df.subjid == subjid]
   fig, ax = plt.subplots(1, 2)
-  percentile_window = bmi_percentiles.loc[(bmi_percentiles.Sex == individual.sex.min()) &
-                                          (bmi_percentiles.age > individual.age.min()) &
-                                          (bmi_percentiles.age < individual.age.max())]
+  percentile_window = bmi_percentiles.loc[(bmi_percentiles.sex == individual.sex.min()) &
+                                          (bmi_percentiles.age_years > individual.age.min()) &
+                                          (bmi_percentiles.age_years < individual.age.max())]
   ax[0].plot(individual.age, individual.bmi)
-  ax[0].plot(percentile_window.age, percentile_window.P5, color='k')
-  ax[0].plot(percentile_window.age, percentile_window.P95, color='k')
+  ax[0].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[0].plot(percentile_window.age_years, percentile_window.P95, color='k')
 
   ax[0].set(xlabel='age (y)', ylabel='BMI',
         title='BMI All Values')
   ax[0].grid()
 
   ax[1].plot(individual[individual.include_height & individual.include_weight].age, individual.loc[individual.include_height & individual.include_weight].bmi)
-  ax[1].plot(percentile_window.age, percentile_window.P5, color='k')
-  ax[1].plot(percentile_window.age, percentile_window.P95, color='k')
+  ax[1].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[1].plot(percentile_window.age_years, percentile_window.P95, color='k')
 
   ax[1].set(xlabel='age (y)', ylabel='BMI',
         title='BMI Cleaned')
+  ax[1].grid()
+  return plt
+
+def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
+  """
+  Displays two charts showing BMI trajectory. The chart on the left will include all
+  values, while the chart on the right will only show values categorized as "Include"
+  by growthcleanr.
+
+  Parameters:
+  merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+             and sex columns
+  bmi_percentiles: (DataFrame) CDC growth chart containing BMI percentiles for age
+  subjid: (String) Id of the individual to plot
+  """
+  individual = merged_df[(merged_df.subjid == subjid) & (merged_df.param == param)]
+  fig, ax = plt.subplots(1, 2, sharey='row')
+  if param == 'WEIGHTKG': percentile_df = wt_df 
+  elif param == 'BMI': percentile_df = bmi_df 
+  else: percentile_df = ht_df
+  percentile_window = percentile_df.loc[(percentile_df.sex == individual.sex.min()) &
+                                        (percentile_df.age_years > individual.age.min()) &
+                                        (percentile_df.age_years < individual.age.max())]
+  ax[0].plot(individual.age, individual.measurement)
+  ax[0].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[0].plot(percentile_window.age_years, percentile_window.P95, color='k')
+
+  ax[0].set(xlabel='age (y)', ylabel=param,
+        title=(param + ' All Values'))
+  ax[0].grid()
+
+  included_individual = individual[individual.clean_cat.isin(['Include'])]
+  ax[1].plot(included_individual.age, included_individual.measurement)
+  ax[1].plot(percentile_window.age_years, percentile_window.P5, color='k')
+  ax[1].plot(percentile_window.age_years, percentile_window.P95, color='k')
+
+  ax[1].set(xlabel='age (y)', ylabel='',
+        title=(param + ' Cleaned'))
   ax[1].grid()
   return plt
 
@@ -343,8 +505,8 @@ def top_ten(merged_df, field, age=None, sex=None, wexclusion=None, hexclusion=No
   #   working_set = working_set.nlargest(10, field)
   # else:
   #   working_set = working_set.nsmallest(10, field)
-  working_set = working_set.drop(columns=['id_x', 'agedays', 'include_height',
-      'include_weight', 'include_both', 'rounded_age', 'agemos'])
+  working_set = working_set.drop(columns=['include_height',
+      'include_weight', 'include_both', 'rounded_age'])
   working_set['sex'] = working_set.sex.replace(0, 'M').replace(1, 'F')
   working_set['age'] = working_set.age.round(decimals=2)
   working_set['height'] = working_set.height.round(decimals=1)
