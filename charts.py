@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from IPython.display import FileLink, FileLinks, Markdown
 
 def setup_individual_obs_df(obs_df):
@@ -36,6 +37,25 @@ def setup_percentiles(percentiles):
   col_list = ['param', 'sex', 'age_years'] + mcol_list
   dta = dta.reindex(columns=col_list)
   return dta
+
+def keep_age_range(df):
+  obs_grp = df
+  def label_excl_grp(row):
+    if row['age'] < 20: return ' Below 20 (Exclude)'
+    if (row['age'] >= 20) & (row['age'] < 30): return ' Between 20 and 30'
+    if (row['age'] >= 30) & (row['age'] < 40): return ' Between 30 and 40'
+    if (row['age'] >= 40) & (row['age'] < 50): return ' Between 40 and 50'
+    if (row['age'] >= 50) & (row['age'] < 60): return ' Between 50 and 60'
+    if (row['age'] >= 60) & (row['age'] < 65): return ' Between 60 and 65'
+    if row['age'] > 65: return 'Above 65 (Exclude)'
+  label_excl_col = obs_grp.apply(lambda row: label_excl_grp(row), axis=1)
+  obs_grp = obs_grp.assign(cat=label_excl_col.values)
+  obs_grp = obs_grp.groupby('cat')['subjid'].count().reset_index().sort_values('cat', ascending=False)
+  colors = ['C3', 'C0', 'C0', 'C0', 'C0', 'C0', 'C3']
+  obs_grp_plot = obs_grp.plot.barh('cat', 'subjid', color=colors, legend=None)
+  obs_grp_plot.set_ylabel('')
+  obs_grp_plot.xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+  return df[df['age'].between(20, 65, inclusive=True)]
 
 def setup_percentile_zscore(percentiles_clean):
   dta_forz_long = percentiles_clean[['Mean', 'sex', 'param', 'age_years', 'sd']]
