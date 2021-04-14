@@ -27,13 +27,14 @@
 # 
 # Jupyter Notebooks have documentation cells, such as this one, and code cells like the one below. The notebook server can runs the code and provides results (if applicable) back in the notebook. The following code cell loads the libraries necessary for the tool to work. If you would like to incorporate other Python libraries to assist in data exploration, they can be added here. Removing libraries from this cell will very likely break the tool.
 
-# In[1]:
+# In[40]:
 
 
 from __future__ import print_function
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 import seaborn as sns
@@ -115,10 +116,18 @@ cleaned_obs.head()
 
 # Next, the `charts.setup_individual_obs_df` function performs transformations on the `cleaned_obs` DataFrame. This will create an `age` column, which is a decimal column that represents the patient's age in years at the time of the observation. It changes the `clean_value` column into a [pandas categorical type](https://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html). It also create an `include` column which contains a boolean value indicating whether growthcleanr states to include (true) or exclude (false) the observation. The resulting DataFrame is assigned to `obs`.
 
-# In[13]:
+# In[36]:
 
 
-obs = charts.setup_individual_obs_df(cleaned_obs)
+obs_full = charts.setup_individual_obs_df(cleaned_obs)
+
+
+# In the following cell, the `charts.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars. It then removes patients outside the intended target population of this notebook (adults 20 to 65).
+
+# In[43]:
+
+
+obs = charts.keep_age_range(obs_full)
 
 
 # The following cell loads in the [CDC Growth Chart Percentile Data Files](https://www.cdc.gov/growthcharts/percentile_data_files.htm). Functions coerce some values into numeric types. It also add an `age` column which is a decimal value representing age in years. Finally, `Sex` is transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). This data is used to plot percentile bands in visualizations in the tool. 
