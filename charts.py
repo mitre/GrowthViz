@@ -329,7 +329,7 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   fig, ax1 = plt.subplots()
   color = 'tab:red'
   color_secondary = 'tab:blue'
-  ax1.set_ylim([50,200])
+  ax1.set_ylim([50,180])
   ax1.set_xlim([20,65])
   ax1.set_xlabel('age (years)')
   ax1.set_ylabel('stature (cm)', color=color)
