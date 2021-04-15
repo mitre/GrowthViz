@@ -57,6 +57,8 @@ def keep_age_range(df):
   obs_grp_plot.xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
   return df[df['age'].between(20, 65, inclusive=True)]
 
+
+
 def setup_percentile_zscore(percentiles_clean):
   dta_forz_long = percentiles_clean[['Mean', 'sex', 'param', 'age_years', 'sd']]
   def label_param (row):
@@ -67,12 +69,15 @@ def setup_percentile_zscore(percentiles_clean):
   dta_forz_long = dta_forz_long.assign(param2=param_col.values)
   dta_forz = dta_forz_long.pivot_table(index=['sex', 'age_years'], columns='param2', values=['Mean', 'sd'], aggfunc='first') #.reset_index()
   dta_forz = dta_forz.sort_index(axis=1, level=1)
-  dta_forz.columns = [f'{x}_{y}' for x,y in dta_forz.columns]
-  return dta_forz.reset_index()
+  dta_forz.columns = [f'{x}_{y}' for x,y in dta_forz.columns] 
+  dta_forz = dta_forz.reset_index()
+  dta_forz['rounded_age'] = dta_forz['age_years']
+  return dta_forz
 
 def setup_merged_df(obs_df):
-  obs_df['height'] = np.where(obs_df['param'] == 'HEIGHTCM', obs_df['measurement'], np.NaN)
-  obs_df['weight'] = np.where(obs_df['param'] == 'WEIGHTKG', obs_df['measurement'], np.NaN)
+  obs_df = obs_df.assign(height=obs_df['measurement'], weight=obs_df['measurement'])
+  obs_df.loc[obs_df.param == 'WEIGHTKG', 'height'] = np.NaN 
+  obs_df.loc[obs_df.param == 'HEIGHTCM', 'weight'] = np.NaN
   heights = obs_df[obs_df.param == 'HEIGHTCM']
   weights = obs_df[obs_df.param == 'WEIGHTKG']
   merged = heights.merge(weights, on=['subjid', 'age_years', 'sex'], how='outer')
@@ -110,7 +115,7 @@ def add_mzscored_to_merged_df(merged_df, pctls): #merged_df, wt_percentiles, ht_
   #merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
   #merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
   #merged_df = calculate_modified_zscore(merged_df, bmi_percentiles, 'bmi')
-  merged_df = merged_df.merge(pctls, on=['sex', 'age_years'], how='left')
+  merged_df = merged_df.merge(pctls, on=['sex', 'rounded_age'], how='left')
   return merged_df
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
@@ -207,6 +212,7 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
   filter = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
   excluded_selected_param = selected_param[~filter]
   included_selected_param = selected_param[filter]
+  plt.rcParams['figure.figsize'] = [6, 4]
   selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the all measurements line, a little messier
   selected_param_plot.plot(included_selected_param['age'],
                            included_selected_param['measurement'], c='y', linestyle='-.', lw=3, marker='o', label='Included Only') # could also try violet
@@ -323,7 +329,7 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   fig, ax1 = plt.subplots()
   color = 'tab:red'
   color_secondary = 'tab:blue'
-  ax1.set_ylim([50,180])
+  ax1.set_ylim([50,200])
   ax1.set_xlim([20,65])
   ax1.set_xlabel('age (years)')
   ax1.set_ylabel('stature (cm)', color=color)
