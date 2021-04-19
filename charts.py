@@ -52,12 +52,23 @@ def keep_age_range(df):
   obs_grp = obs_grp.assign(cat=label_excl_col.values)
   obs_grp = obs_grp.groupby('cat')['subjid'].count().reset_index().sort_values('cat', ascending=False)
   colors = ['C3', 'C0', 'C0', 'C0', 'C0', 'C0', 'C3']
-  obs_grp_plot = obs_grp.plot.barh('cat', 'subjid', color=colors, legend=None)
-  obs_grp_plot.set_ylabel('')
-  obs_grp_plot.xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+  obs_grp_plot = obs_grp.plot.bar('cat', 'subjid', color=colors, legend=None)
+  obs_grp_plot.set_xlabel('')
+  plt.xticks(rotation=45, ha='right')
+  obs_grp_plot.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
   return df[df['age'].between(20, 65, inclusive=True)]
 
-
+def weight_distr(df):
+  wgt_grp = df[(df['param'] == 'WEIGHTKG') & (df['measurement'] >= 120) & (df['include'] == True)]
+  round_col = wgt_grp.apply(lambda row: np.around(row.measurement, decimals=0), axis=1)
+  wgt_grp = wgt_grp.assign(round_weight=round_col.values)
+  wgt_grp_sum = wgt_grp.groupby('round_weight')['subjid'].count().reset_index()
+  plt.rcParams['figure.figsize'] = [7, 5]
+  wgt_grp_sum_plot = plt.bar(wgt_grp_sum['round_weight'], wgt_grp_sum['subjid']) 
+  plt.ylabel('Total Patient Observations')
+  plt.xlabel('Recorded Weight (Kg)')
+  plt.grid()
+  return wgt_grp_sum_plot
 
 def setup_percentile_zscore(percentiles_clean):
   dta_forz_long = percentiles_clean[['Mean', 'sex', 'param', 'age_years', 'sd']]
@@ -209,9 +220,9 @@ def overlap_view(obs_df, subjid, param, include_carry_forward, include_percentil
   """
   individual = obs_df[obs_df.subjid == subjid]
   selected_param = individual[individual.param == param]
-  filter = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
-  excluded_selected_param = selected_param[~filter]
-  included_selected_param = selected_param[filter]
+  filter_excl = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
+  excluded_selected_param = selected_param[~filter_excl]
+  included_selected_param = selected_param[filter_excl]
   plt.rcParams['figure.figsize'] = [6, 4]
   selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the all measurements line, a little messier
   selected_param_plot.plot(included_selected_param['age'],
@@ -257,9 +268,9 @@ def overlap_view_all(obs_df, id, param, include_carry_forward, include_percentil
   """
   individual = obs_df[obs_df.subjid == id]
   selected_param = individual[individual.param == param]
-  filter = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
-  excluded_selected_param = selected_param[~filter]
-  included_selected_param = selected_param[filter]
+  filter_excl = selected_param.clean_cat.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
+  excluded_selected_param = selected_param[~filter_excl]
+  included_selected_param = selected_param[filter_excl]
   selected_param_plot = selected_param.plot.line(x='age', y='measurement', label='All Measurements', lw=3) # could instead have the marker on the included line
   selected_param_plot.plot(included_selected_param['age'],
                            included_selected_param['measurement'], c='y', linestyle='-.', label='Included Only', marker='o', lw=3) # could also try violet
@@ -319,12 +330,12 @@ def overlap_view_double(obs_df, subjid, show_all_measurements, show_excluded_val
   individual = obs_df[obs_df.subjid == subjid]
   height = individual[individual.param == 'HEIGHTCM']
   weight = individual[individual.param == 'WEIGHTKG']
-  filter = height.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else height.clean_value == 'Include'
-  filter_weight = weight.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else weight.clean_value == 'Include'
-  excluded_height = height[~filter]
-  excluded_weight = weight[~filter_weight]
-  included_height = height[filter]
-  included_weight = weight[filter_weight]
+  filter_excl = height.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else height.clean_value == 'Include'
+  filter_excl_weight = weight.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else weight.clean_value == 'Include'
+  excluded_height = height[~filter_excl]
+  excluded_weight = weight[~filter_excl_weight]
+  included_height = height[filter_excl]
+  included_weight = weight[filter_excl_weight]
   plt.rcParams['figure.figsize'] = [8, 10]
   fig, ax1 = plt.subplots()
   color = 'tab:red'
