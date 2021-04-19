@@ -27,7 +27,7 @@
 # 
 # Jupyter Notebooks have documentation cells, such as this one, and code cells like the one below. The notebook server can runs the code and provides results (if applicable) back in the notebook. The following code cell loads the libraries necessary for the tool to work. If you would like to incorporate other Python libraries to assist in data exploration, they can be added here. Removing libraries from this cell will very likely break the tool.
 
-# In[1]:
+# In[2]:
 
 
 from __future__ import print_function
@@ -44,13 +44,13 @@ import qgrid
 
 # The next two code cells tell the notebook server to automatically reload the externally defined Python functions created to assist in data analysis.
 
-# In[2]:
+# In[3]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
 
 
-# In[3]:
+# In[4]:
 
 
 get_ipython().run_line_magic('autoreload', '2')
@@ -58,7 +58,7 @@ get_ipython().run_line_magic('autoreload', '2')
 
 # This code cell instructs the notebook to display plots automatically inline
 
-# In[4]:
+# In[5]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -66,7 +66,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 
 # This code cell tells the notebook to output plots for high DPI displays, such as 4K monitors, many smartphones or a retina display on Apple hardware. This cell does not need to be run and can be safely removed. If removed, charts will look more "blocky" or "pixelated" on high DPI displays.
 
-# In[5]:
+# In[6]:
 
 
 get_ipython().run_line_magic('config', "InlineBackend.figure_format = 'retina'")
@@ -76,7 +76,7 @@ get_ipython().run_line_magic('config', "InlineBackend.figure_format = 'retina'")
 # 
 # The following cell import functions created for the tool to asssist in data analysis. Some of the functions generate charts used in this tool. The chart code may be modified to change the appearance of plots without too much risk of breaking things. Other functions transform DataFrames and changing those will very likely cause things to break. If you are unable to tell the difference in the functions by looking at the code, it is probably best to leave them unmodified.
 
-# In[6]:
+# In[7]:
 
 
 import charts
@@ -99,7 +99,7 @@ import charts
 # 
 # This information will be loaded into a [pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html) called `cleaned_obs`
 
-# In[7]:
+# In[8]:
 
 
 # using new sample data for adults
@@ -108,7 +108,7 @@ cleaned_obs = pd.read_csv("growthviz-data/sample-adults-cleaned.csv")
 
 # The following cell shows what the first five rows look like in the CSV file
 
-# In[8]:
+# In[9]:
 
 
 cleaned_obs.head()
@@ -116,7 +116,7 @@ cleaned_obs.head()
 
 # Next, the `charts.setup_individual_obs_df` function performs transformations on the `cleaned_obs` DataFrame. This will create an `age` column, which is a decimal column that represents the patient's age in years at the time of the observation. It changes the `clean_value` column into a [pandas categorical type](https://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html). It also create an `include` column which contains a boolean value indicating whether growthcleanr states to include (true) or exclude (false) the observation. The resulting DataFrame is assigned to `obs`.
 
-# In[9]:
+# In[10]:
 
 
 obs_full = charts.setup_individual_obs_df(cleaned_obs)
@@ -124,7 +124,7 @@ obs_full = charts.setup_individual_obs_df(cleaned_obs)
 
 # In the following cell, the `charts.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars. It then removes patients outside the intended target population of this notebook (adults 20 to 65).
 
-# In[10]:
+# In[11]:
 
 
 obs = charts.keep_age_range(obs_full)

@@ -50,7 +50,7 @@ def keep_age_range(df):
     if row['age'] > 65: return 'Above 65 (Exclude)'
   label_excl_col = obs_grp.apply(lambda row: label_excl_grp(row), axis=1)
   obs_grp = obs_grp.assign(cat=label_excl_col.values)
-  obs_grp = obs_grp.groupby('cat')['subjid'].count().reset_index().sort_values('cat', ascending=False)
+  obs_grp = obs_grp.groupby('cat')['subjid'].count().reset_index().sort_values('cat', ascending=True)
   colors = ['C3', 'C0', 'C0', 'C0', 'C0', 'C0', 'C3']
   obs_grp_plot = obs_grp.plot.bar('cat', 'subjid', color=colors, legend=None)
   obs_grp_plot.set_xlabel('')
