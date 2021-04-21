@@ -161,11 +161,11 @@ ht_percentiles = percentiles_clean[percentiles_clean['param'] == 'HEIGHTCM']
 percentiles_clean.head(15)
 
 
-# In[15]:
+# In[28]:
 
 
 # create mean/sd values to merge to adult data for z-score calculations
-percentiles_long = sumstats.setup_percentile_zscore(percentiles_clean)
+percentiles_long = sumstats.setup_percentile_zscore_adults(percentiles_clean)
 percentiles_long.head()
 
 
@@ -184,14 +184,14 @@ percentiles_long.head()
 # 
 # The result is stored in `merged_df`.
 
-# In[23]:
+# In[29]:
 
 
 merged_df = processdata.setup_merged_df(obs, 'adults')
 merged_df.head()
 
 
-# In[25]:
+# In[30]:
 
 
 # create BMI data to add below for individual trajectories
@@ -203,7 +203,7 @@ obs_wbmi.head()
 # 
 # The following shows the counts of the values for inclusion/exclusion along with the percentages of 
 
-# In[18]:
+# In[31]:
 
 
 processdata.exclusion_information(obs)
@@ -213,10 +213,10 @@ processdata.exclusion_information(obs)
 # 
 # This next cell creates an interactive tool that can be used to explore patients. The `sumstats.add_mzscored_to_merged_df` function will add modified Z Scores for height, weight and BMI to `merged_df`. The tool uses [Qgrid](https://github.com/quantopian/qgrid) to create the interactive table. Clicking on a row will create a plot for the individual below the table.
 
-# In[19]:
+# In[32]:
 
 
-mdf = sumstats.add_mzscored_to_merged_df(merged_df, percentiles_long) #wt_percentiles, ht_percentiles, bmi_percentiles)
+mdf = sumstats.add_mzscored_to_merged_df_adults(merged_df, percentiles_long) 
 mdf['wtz'] = (mdf['weight'] - mdf['Mean_weight'])/mdf['sd_weight']
 mdf['htz'] = (mdf['height'] - mdf['Mean_height'])/mdf['sd_height']
 mdf['BMIz'] = (mdf['bmi'] - mdf['Mean_bmi'])/mdf['sd_bmi']

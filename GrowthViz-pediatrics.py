@@ -179,10 +179,10 @@ processdata.exclusion_information(obs)
 # 
 # This next cell creates interactive tool can be used to explore patients. The `charts.add_mzscored_to_merged_df` function will add modified Z Scores for height, weight and BMI to `merged_df`. The tool uses [Qgrid](https://github.com/quantopian/qgrid) to create the interactive table. Clicking on a row will create a plot for the individual below the table.
 
-# In[13]:
+# In[31]:
 
 
-mdf = charts.add_mzscored_to_merged_df(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles)
+mdf = sumstats.add_mzscored_to_merged_df_pediatrics(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles)
 col_opt = {
     'width': 20,
 }
@@ -346,7 +346,7 @@ interact(charts.bmi_with_percentiles, merged_df = fixed(merged_df),
 # The buttons can be used to add or remove columns from the table.
 # The checkbox includes "missing" values (note: this will impact the raw columns as missing values may cause BMI values of infinity since they divide by 0 when missing). Missing values are not included by default.
 
-# In[23]:
+# In[28]:
 
 
 min_toggle = widgets.ToggleButton(value=True, description='Minimum BMI', 
@@ -367,7 +367,7 @@ include_missing_values = widgets.Checkbox(value=False,description='Include Missi
 hbox = widgets.HBox([min_toggle, mean_toggle, max_toggle, std_toggle, count_toggle, diff_toggle])
 ui = widgets.VBox([age_range, hbox, include_missing_values])
 out = widgets.Output()
-widgets.interactive_output(charts.bmi_stats, {'merged_df': fixed(merged_df), 'include_min': min_toggle, 
+widgets.interactive_output(sumstats.bmi_stats, {'merged_df': fixed(merged_df), 'include_min': min_toggle, 
          'include_mean': mean_toggle, 'include_max': max_toggle, 'include_std': std_toggle, 
          'include_mean_diff': diff_toggle, 'include_count': count_toggle,
          'out': fixed(out), 'age_range': age_range, 'include_missing': include_missing_values})

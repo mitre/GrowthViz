@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from IPython.display import FileLink, FileLinks, Markdown
 
-def setup_percentile_zscore(percentiles_clean):
+def setup_percentile_zscore_adults(percentiles_clean):
   dta_forz_long = percentiles_clean[['Mean', 'sex', 'param', 'age_years', 'sd']]
   def label_param (row):
     if row['param'] == 'WEIGHTKG' : return 'weight'
@@ -20,11 +20,14 @@ def setup_percentile_zscore(percentiles_clean):
   dta_forz['rounded_age'] = dta_forz['age_years']
   return dta_forz
 
-def add_mzscored_to_merged_df(merged_df, pctls): #merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
-  #merged_df = calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
-  #merged_df = calculate_modified_zscore(merged_df, ht_percentiles, 'height')
-  #merged_df = calculate_modified_zscore(merged_df, bmi_percentiles, 'bmi')
+def add_mzscored_to_merged_df_adults(merged_df, pctls): 
   merged_df = merged_df.merge(pctls, on=['sex', 'rounded_age'], how='left')
+  return merged_df
+
+def add_mzscored_to_merged_df_pediatrics(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
+  merged_df = calculate_modified_zscore_pediatrics(merged_df, wt_percentiles, 'weight')
+  merged_df = calculate_modified_zscore_pediatrics(merged_df, ht_percentiles, 'height')
+  merged_df = calculate_modified_zscore_pediatrics(merged_df, bmi_percentiles, 'bmi')
   return merged_df
 
 def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_max=True,
@@ -98,7 +101,7 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
     out.append_display_data(Markdown("## Male"))
     out.append_display_data(merged_stats.loc['M'].style.format(formatters))
 
-def calculate_modified_weight_zscore(merged_df, wt_percentiles):
+def calculate_modified_weight_zscore_pediatrics(merged_df, wt_percentiles):
   """
   Adds a column to the provided DataFrame with the modified Z score for weight
 
@@ -109,9 +112,9 @@ def calculate_modified_weight_zscore(merged_df, wt_percentiles):
   Returns
   The dataframe with a new wtz column
   """
-  return calculate_modified_zscore(merged_df, wt_percentiles, 'weight')
+  return calculate_modified_zscore_pediatrics(merged_df, wt_percentiles, 'weight')
 
-def calculate_modified_zscore(merged_df, percentiles, category):
+def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
   """
   Adds a column to the provided DataFrame with the modified Z score for the provided category
 
