@@ -78,7 +78,10 @@ get_ipython().run_line_magic('config', "InlineBackend.figure_format = 'retina'")
 # In[6]:
 
 
+import processdata
+import sumstats
 import charts
+import compare
 
 
 # This cell reads in a data set that has been run through the [growthcleanr](https://github.com/carriedaymont/growthcleanr) algorithm. Details of the algorithm can be found in [Automated identification of implausible values in growth data from pediatric electronic health records](https://academic.oup.com/jamia/article/24/6/1080/3767271)
@@ -114,23 +117,31 @@ cleaned_obs.head()
 
 # Next, the `charts.setup_individual_obs_df` function performs transformations on the `cleaned_obs` DataFrame. This will create an `age` column, which is a decimal column that represents the patient's age in years at the time of the observation. It changes the `clean_value` column into a [pandas categorical type](https://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html). It also create an `include` column which contains a boolean value indicating whether growthcleanr states to include (true) or exclude (false) the observation. The resulting DataFrame is assigned to `obs`.
 
-# In[9]:
+# In[14]:
 
 
-obs = charts.setup_individual_obs_df(cleaned_obs)
+obs_full = processdata.setup_individual_obs_df(cleaned_obs, 'pediatrics')
+
+
+# In the following cell, the `processdata.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars. It then removes patients outside the intended target population of this notebook (children 2 to 20).
+
+# In[17]:
+
+
+obs = processdata.keep_age_range(obs_full, 'pediatrics')
 
 
 # The following cell loads in the [CDC Growth Chart Percentile Data Files](https://www.cdc.gov/growthcharts/percentile_data_files.htm). Functions coerce some values into numeric types. It also add an `age` column which is a decimal value representing age in years. Finally, `Sex` is transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). This data is used to plot percentile bands in visualizations in the tool. 
 
-# In[10]:
+# In[18]:
 
 
 bmi_percentiles = pd.read_csv("bmiagerev.csv")
-bmi_percentiles = charts.setup_percentiles(bmi_percentiles)
+bmi_percentiles = processdata.setup_percentiles_pediatrics(bmi_percentiles)
 wt_percentiles = pd.read_csv("wtage.csv")
-wt_percentiles = charts.setup_percentiles(wt_percentiles)
+wt_percentiles = processdata.setup_percentiles_pediatrics(wt_percentiles)
 ht_percentiles = pd.read_csv("statage.csv")
-ht_percentiles = charts.setup_percentiles(ht_percentiles)
+ht_percentiles = processdata.setup_percentiles_pediatrics(ht_percentiles)
 
 
 # In a previous cell, the tool creates the `obs` DataFrame. In that structure there is one measurement, either height or weight, per row. In this cell, the `charts.setup_merged_df` function will create a DataFrame where a height observation and weight observation for the same `subjid` on the same `agedays` are combined into a single row. Several new columns are added to the resulting DataFrame:
@@ -148,20 +159,20 @@ ht_percentiles = charts.setup_percentiles(ht_percentiles)
 # 
 # The result is stored in `merged_df`.
 
-# In[11]:
+# In[22]:
 
 
-merged_df = charts.setup_merged_df(obs)
+merged_df = processdata.setup_merged_df(obs, 'pediatrics')
 
 
 # ## Exclusion Information
 # 
 # The following shows the counts of the values for inclusion/exclusion along with the percentages of 
 
-# In[12]:
+# In[23]:
 
 
-charts.exclusion_information(obs)
+processdata.exclusion_information(obs)
 
 
 # # Finding Individuals
@@ -367,17 +378,17 @@ display(ui, out)
 # 
 # The following code allows you to export a DataFrame as a CSV file. When the cell below is run, the drop down will contain all DataFrames stored in variables in this notebook. Select the desired DataFrame and click Generate CSV. This will create the CSV file and provide a link to download it.
 
-# In[24]:
+# In[27]:
 
 
-df_selector = widgets.Dropdown(options=charts.data_frame_names(locals()), description='Data Frames')
+df_selector = widgets.Dropdown(options=processdata.data_frame_names(locals()), description='Data Frames')
 generate_button = widgets.Button(description='Generate CSV')
 ui = widgets.VBox([df_selector, generate_button])
 out = widgets.Output()
 
 l = locals()
 def on_button_clicked(b):
-    charts.export_to_csv(l, df_selector, out)
+    processdata.export_to_csv(l, df_selector, out)
 
 generate_button.on_click(on_button_clicked)
     
@@ -392,21 +403,21 @@ display(ui, out)
 # 
 # The cell below copies the merged DataFrame and then cleans the swapped values.
 
-# In[25]:
+# In[24]:
 
 
 cleaned = merged_df.copy()
-cleaned = charts.clean_swapped_values(cleaned)
+cleaned = processdata.clean_swapped_values(cleaned)
 cleaned[cleaned.height_cat == 'Swapped-Measurements'].head()
 
 
 # The cell below copies the merged DataFrame and then cleans the unit errors. Note: To see results in the table below with the example data you may need to swap "clean_with_swaps.csv" for "clean_with_uswaps.csv" and rerun the cells in the "Loading Data" section above. The default example set has swaps but not unit errors.
 
-# In[26]:
+# In[25]:
 
 
 cleaned = merged_df.copy()
-cleaned = charts.clean_unit_errors(cleaned)
+cleaned = processdata.clean_unit_errors(cleaned)
 cleaned[cleaned.height_cat == 'Unit-Error-High'].head()
 
 
