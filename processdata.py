@@ -6,14 +6,16 @@ import matplotlib as mpl
 from IPython.display import FileLink, FileLinks, Markdown
 
 def setup_individual_obs_df(obs_df, mode):
+  df = obs_df
   if mode == 'adults':
-    obs_df.rename(columns={'result':'clean_value'}, inplace=True)
-    obs_df['age'] = obs_df['age_years']  
+    df.rename(columns={'result':'clean_value', 'age_years':'age'}, inplace=True)
+    #obs_df['age'] = obs_df['age_years'] 
   elif mode == 'pediatrics':  
-    obs_df['age'] = obs_df['agedays'] / 365 
-  obs_df['clean_cat'] = obs_df['clean_value'].astype('category')
-  obs_df['include'] = obs_df.clean_value.eq("Include")
-  return obs_df
+    df['age'] = df['agedays'] / 365 
+    df.drop(columns=['agedays'], inplace=True)
+  df['clean_cat'] = df['clean_value'].astype('category')
+  df['include'] = df.clean_value.eq("Include")
+  return df
 
 def setup_percentiles_adults(percentiles):
   # expand decade rows into one row per year
@@ -23,21 +25,22 @@ def setup_percentiles_adults(percentiles):
   pct = pct.assign(range=range_col.values)
   dta = pd.DataFrame((np.repeat(pct.values, pct['range'], axis=0)), columns=pct.columns)
   dta['count'] = dta.groupby(['Sex', 'Measure', 'Age_low', 'Age_high']).cumcount() # ['range'].transform('cumcount')
-  dta['age_years'] = dta['Age_low'] + dta['count']
+  dta['age'] = dta['Age_low'] + dta['count']
   # add standard deviation and other values
   dta['sqrt'] = np.sqrt(pd.to_numeric(dta['Number of examined persons']))
   dta['sd'] = dta['Standard error of the mean'] * dta['sqrt']
-  dta['sex'] = np.where(dta['Sex'] == 'Male', 0, 1)
+  #dta['sex'] = np.where(dta['Sex'] == 'Male', 0, 1)
+  dta['Sex'] = dta.Sex.replace('Male', 0).replace('Female', 1)
   dta.rename(columns={'Measure':'param'}, inplace=True)
-  dta.drop(columns=['Age (All race and Hispanic-origin groups)', 'Sex', 'Age_low', 'sqrt', 'Standard error of the mean',
+  dta.drop(columns=['Age (All race and Hispanic-origin groups)', 'Age_low', 'sqrt', 'Standard error of the mean',
                   'Age_high', 'range', 'count', 'Number of examined persons'], inplace=True)
   # smooth percentiles between X9-(X+1)1 (i.e., 29-31)
-  dta['decade'] = np.where(dta['age_years'] == (round(dta['age_years'].astype(float), -1)), 1, 0)
+  dta['decade'] = np.where(dta['age'] == (round(dta['age'].astype(float), -1)), 1, 0)
   mcol_list = ['Mean', 'sd', 'P5', 'P10', 'P15', 'P25', 'P50', 'P75', 'P85', 'P90', 'P95']
   for col in mcol_list:
-    dta[col] = np.where((dta['decade'] == 1) & (dta['age_years'] < 110), (dta[col] + dta[col].shift(1))/2, dta[col])
+    dta[col] = np.where((dta['decade'] == 1) & (dta['age'] < 110), (dta[col] + dta[col].shift(1))/2, dta[col])
   dta.drop(columns={'decade'}, inplace=True)
-  col_list = ['param', 'sex', 'age_years'] + mcol_list
+  col_list = ['param', 'Sex', 'age'] + mcol_list
   dta = dta.reindex(columns=col_list)
   return dta
 
@@ -55,6 +58,7 @@ def setup_percentiles_pediatrics(percentiles):
   # which uses a numeric value of 0 (male) or 1 (female).
   # This aligns things to the growthcleanr values
   percentiles['Sex'] = percentiles['Sex'] - 1
+  #percentiles.drop(columns=['Sex'], inplace=True)
   return percentiles
 
 def keep_age_range(df, mode):
@@ -108,15 +112,14 @@ def setup_merged_df(obs_df, mode):
   only_needed_columns = merged.drop(columns=['param_x', 'measurement_x', 'clean_value_x',
                                              'weight_x', 'id_y', 'param_y',
                                              'measurement_y', 'clean_value_y', 'height_y'])
-  if mode == 'adults': only_needed_columns.drop(columns=['reason_x', 'age_years_x'], inplace=True)
+  if mode == 'adults': only_needed_columns.drop(columns=['reason_x'], inplace=True)
   clean_column_names = only_needed_columns.rename(columns={'clean_cat_x': 'height_cat',
                                                            'include_x': 'include_height',
                                                            'height_x': 'height',
                                                            'clean_cat_y': 'weight_cat',
                                                            'include_y': 'include_weight',
                                                            'weight_y': 'weight',
-                                                           'age_years_y':'age_years', 
-                                                           'reason_y':'reason', 
+                                                           'reason_y':'reason',
                                                            'id_x':'id'})
   clean_column_names['bmi'] = clean_column_names['weight'] / ((clean_column_names['height'] / 100) ** 2)
   clean_column_names['rounded_age'] = np.around(clean_column_names.age)
@@ -144,7 +147,7 @@ def exclusion_information(obs):
                            'WEIGHTKG': "{:.0f}".format, 'weight percent': "{:.2f}%"})
 
 def setup_bmi_adults(merged_df, obs):
-  data = merged_df[['id', 'subjid', 'sex', 'age_years', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
+  data = merged_df[['id', 'subjid', 'sex', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
   def label_incl(row):
     if (row['include_both'] == True): return 'Include'
     elif (row['weight_cat'] == 'Implausible') | (row['height_cat'] == 'Implausible'): return 'Implausible'
@@ -152,6 +155,7 @@ def setup_bmi_adults(merged_df, obs):
   incl_col = data.apply(lambda row: label_incl(row), axis=1)
   data = data.assign(clean_cat=incl_col.values)
   data['param'] = 'BMI'
+  data['clean_value'] = data['clean_cat']
   data.rename(columns={'bmi':'measurement'}, inplace=True)
   return pd.concat([obs, data])
 

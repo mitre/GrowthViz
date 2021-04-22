@@ -6,22 +6,25 @@ import matplotlib as mpl
 from IPython.display import FileLink, FileLinks, Markdown
 
 def setup_percentile_zscore_adults(percentiles_clean):
-  dta_forz_long = percentiles_clean[['Mean', 'sex', 'param', 'age_years', 'sd']]
+  # create mean/sd values to merge to adult data for z-score calculations
+  dta_forz_long = percentiles_clean[['Mean', 'Sex', 'param', 'age', 'sd']]
   def label_param (row):
     if row['param'] == 'WEIGHTKG' : return 'weight'
     if row['param'] == 'BMI' : return 'bmi'
     if row['param'] == 'HEIGHTCM' : return 'height'
   param_col = dta_forz_long.apply(lambda row: label_param(row), axis=1)
   dta_forz_long = dta_forz_long.assign(param2=param_col.values)
-  dta_forz = dta_forz_long.pivot_table(index=['sex', 'age_years'], columns='param2', values=['Mean', 'sd'], aggfunc='first') #.reset_index()
+  dta_forz = dta_forz_long.pivot_table(index=['Sex', 'age'], columns='param2', values=['Mean', 'sd'], aggfunc='first') #.reset_index()
   dta_forz = dta_forz.sort_index(axis=1, level=1)
   dta_forz.columns = [f'{x}_{y}' for x,y in dta_forz.columns] 
   dta_forz = dta_forz.reset_index()
-  dta_forz['rounded_age'] = dta_forz['age_years']
+  dta_forz['rounded_age'] = dta_forz['age']
+  dta_forz.rename(columns={'Sex':'sex'}, inplace=True)
   return dta_forz
 
-def add_mzscored_to_merged_df_adults(merged_df, pctls): 
-  merged_df = merged_df.merge(pctls, on=['sex', 'rounded_age'], how='left')
+def add_mzscored_to_merged_df_adults(merged_df, pctls):
+  pct_df = pctls.drop(columns={'age'})
+  merged_df = merged_df.merge(pct_df, on=['sex', 'rounded_age'], how='left')
   return merged_df
 
 def add_mzscored_to_merged_df_pediatrics(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles):
@@ -101,6 +104,7 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
     out.append_display_data(Markdown("## Male"))
     out.append_display_data(merged_stats.loc['M'].style.format(formatters))
 
+# this may be an artifact that's no longer needed - test
 def calculate_modified_weight_zscore_pediatrics(merged_df, wt_percentiles):
   """
   Adds a column to the provided DataFrame with the modified Z score for weight
