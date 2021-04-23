@@ -102,9 +102,9 @@ def overlap_view_pediatrics(obs_df, subjid, param, include_carry_forward, includ
   """
   individual = obs_df[obs_df.subjid == subjid]
   selected_param = individual[individual.param == param]
-  filter = selected_param.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
-  excluded_selected_param = selected_param[~filter]
-  included_selected_param = selected_param[filter]
+  filter_excl = selected_param.clean_value.isin(['Include', 'Exclude-Carried-Forward']) if include_carry_forward else selected_param.clean_value == 'Include'
+  excluded_selected_param = selected_param[~filter_excl]
+  included_selected_param = selected_param[filter_excl]
   selected_param_plot = selected_param.plot.line(x='age', y='measurement')
   selected_param_plot.plot(included_selected_param['age'],
                            included_selected_param['measurement'], c='y', linestyle='-.')
@@ -123,7 +123,6 @@ def overlap_view_pediatrics(obs_df, subjid, param, include_carry_forward, includ
     selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k', zorder=1)
   return selected_param_plot
 
-# should we remove this from adults? leaning yes
 def overlap_view_double_pediatrics(obs_df, subjid, show_all_measurements, show_excluded_values, show_trajectory_with_exclusions, include_carry_forward, include_percentiles, wt_df, ht_df):
   """
   Creates a chart showing the trajectory for an individual with all values present. All values will

@@ -14,7 +14,7 @@ def setup_percentile_zscore_adults(percentiles_clean):
     if row['param'] == 'HEIGHTCM' : return 'height'
   param_col = dta_forz_long.apply(lambda row: label_param(row), axis=1)
   dta_forz_long = dta_forz_long.assign(param2=param_col.values)
-  dta_forz = dta_forz_long.pivot_table(index=['Sex', 'age'], columns='param2', values=['Mean', 'sd'], aggfunc='first') #.reset_index()
+  dta_forz = dta_forz_long.pivot_table(index=['Sex', 'age'], columns='param2', values=['Mean', 'sd'], aggfunc='first')
   dta_forz = dta_forz.sort_index(axis=1, level=1)
   dta_forz.columns = [f'{x}_{y}' for x,y in dta_forz.columns] 
   dta_forz = dta_forz.reset_index()
@@ -103,20 +103,6 @@ def bmi_stats(merged_df, out=None, include_min=True, include_mean=True, include_
     out.append_display_data(merged_stats.loc['F'].style.format(formatters))
     out.append_display_data(Markdown("## Male"))
     out.append_display_data(merged_stats.loc['M'].style.format(formatters))
-
-# this may be an artifact that's no longer needed - test
-def calculate_modified_weight_zscore_pediatrics(merged_df, wt_percentiles):
-  """
-  Adds a column to the provided DataFrame with the modified Z score for weight
-
-  Parameters:
-  merged_df: (DataFrame) with subjid, sex, weight and age columns
-  wt_percentiles: (DataFrame) CDC weight growth chart DataFrame with L, M, S values
-
-  Returns
-  The dataframe with a new wtz column
-  """
-  return calculate_modified_zscore_pediatrics(merged_df, wt_percentiles, 'weight')
 
 def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
   """

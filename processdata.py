@@ -9,10 +9,11 @@ def setup_individual_obs_df(obs_df, mode):
   df = obs_df
   if mode == 'adults':
     df.rename(columns={'result':'clean_value', 'age_years':'age'}, inplace=True)
-    #obs_df['age'] = obs_df['age_years'] 
   elif mode == 'pediatrics':  
     df['age'] = df['agedays'] / 365 
     df.drop(columns=['agedays'], inplace=True)
+  else:
+    "Mode must be equal to adults or pediatrics"
   df['clean_cat'] = df['clean_value'].astype('category')
   df['include'] = df.clean_value.eq("Include")
   return df
@@ -44,16 +45,10 @@ def setup_percentiles_adults(percentiles):
   dta = dta.reindex(columns=col_list)
   return dta
 
-# figure out issue with duplicated header row
 def setup_percentiles_pediatrics(percentiles):
-  percentiles['Agemos'] = pd.to_numeric(percentiles['Agemos'], errors='coerce')
-  percentiles['P5'] = pd.to_numeric(percentiles['P5'], errors='coerce')
-  percentiles['P95'] = pd.to_numeric(percentiles['P95'], errors='coerce')
+  percentiles = pd.read_csv(percentiles_file, dtype={'Agemos': float, 'P5': float,
+    'P50': float, 'P95': float, 'L': float, 'M': float, 'S': float, 'Sex': int})
   percentiles['age'] = percentiles['Agemos'] / 12
-  percentiles['Sex'] = pd.to_numeric(percentiles['Sex'], errors='coerce')
-  percentiles['L'] = pd.to_numeric(percentiles['L'], errors='coerce')
-  percentiles['M'] = pd.to_numeric(percentiles['M'], errors='coerce')
-  percentiles['S'] = pd.to_numeric(percentiles['S'], errors='coerce')
   # Values by CDC (1=male; 2=female) differ from growthcleanr
   # which uses a numeric value of 0 (male) or 1 (female).
   # This aligns things to the growthcleanr values
@@ -146,12 +141,13 @@ def exclusion_information(obs):
   return exc.style.format({'HEIGHTCM': "{:.0f}".format, 'height percent': "{:.2f}%",
                            'WEIGHTKG': "{:.0f}".format, 'weight percent': "{:.2f}%"})
 
+def label_incl(row):
+  if (row['include_both'] == True): return 'Include'
+  elif (row['weight_cat'] == 'Implausible') | (row['height_cat'] == 'Implausible'): return 'Implausible'
+  else: return 'Only Wt or Ht'
+
 def setup_bmi_adults(merged_df, obs):
   data = merged_df[['id', 'subjid', 'sex', 'age', 'rounded_age', 'bmi', 'weight_cat', 'height_cat', 'include_both']]
-  def label_incl(row):
-    if (row['include_both'] == True): return 'Include'
-    elif (row['weight_cat'] == 'Implausible') | (row['height_cat'] == 'Implausible'): return 'Implausible'
-    else: return 'Only Wt or Ht'
   incl_col = data.apply(lambda row: label_incl(row), axis=1)
   data = data.assign(clean_cat=incl_col.values)
   data['param'] = 'BMI'
