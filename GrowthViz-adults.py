@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # GrowthViz
+# # GrowthViz - Adults
 # 
 # ## Background
 # 
@@ -9,13 +9,15 @@
 # 
 # > In pediatrics, evaluation of growth is fundamental, and many pediatric research studies include some aspect of growth as an outcome or other variable. The clinical growth measurements obtained in day-to-day care are susceptible to error beyond the imprecision inherent in any anthropometric measurement. Some errors result from minor problems with measurement technique. While these errors can be important in certain analyses, they are often small and generally impossible to detect after measurements are recorded. Larger measurement technique errors can result in values that are biologically implausible and can cause problems for many analyses. 
 # 
+# The `growthcleanr` package has been expanded to identify implausible height and weight observations among adult subjects, up to age 65. This notebook, like the pediatrics-focused `GrowthViz-pediatrics.ipynb`, supports review of the output `growthcleanr` when working with data from adult subjects.
+# 
 # ## Growthcleanr
 # 
-# [growthcleanr](https://github.com/carriedaymont/growthcleanr) is an automated method for cleaning longitudinal pediatric growth data from EHRs. It is available as open source software.
+# [growthcleanr](https://github.com/carriedaymont/growthcleanr) is an automated method for identifying implausible values in adult anthropometric data from EHRs. It is available as open source software.
 # 
 # ## GrowthViz Purpose
 # 
-# The objective of this tool is to allow users to conduct post-processing and data visualization of growthcleanr output. [growthcleanr](https://github.com/carriedaymont/growthcleanr) is an automated method for cleaning longitudinal pediatric growth data from EHRs. It is available as open source software. GrowthViz is to be used **after** a data set has been run through growthcleanr.
+# The objective of this tool is to allow users to conduct post-processing and data visualization of growthcleanr output. GrowthViz is to be used **after** a data set has been run through growthcleanr.
 # 
 # GrowthViz is a [Juypter Notebook](https://jupyter.org/). It provides an environment that includes graphical user interfaces as well as interactive software development to explore data. To achieve this, GrowthViz references different software languages and packages:
 #  - [Python programming language](https://www.python.org/) is used to import, transform, visualize and analyze the output of growthcleanr. Some of the code for the tool is directly included in this notebook. Other functions have been placed in an external file to minimize the amount of code that users see in order to let them focus on the actual data.
