@@ -14,6 +14,7 @@ def setup_percentile_zscore_adults(percentiles_clean):
     if row['param'] == 'HEIGHTCM' : return 'height'
   param_col = dta_forz_long.apply(lambda row: label_param(row), axis=1)
   dta_forz_long = dta_forz_long.assign(param2=param_col.values)
+  # preserving some capitalization to maintain compatibility with pediatric percentiles data
   dta_forz = dta_forz_long.pivot_table(index=['Sex', 'age'], columns='param2', values=['Mean', 'sd'], aggfunc='first')
   dta_forz = dta_forz.sort_index(axis=1, level=1)
   dta_forz.columns = [f'{x}_{y}' for x,y in dta_forz.columns] 

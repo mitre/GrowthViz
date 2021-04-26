@@ -144,12 +144,9 @@ charts.weight_distr(obs)
 # In[12]:
 
 
-bmi_percentiles = pd.read_csv("bmiagerev.csv")
-bmi_percentiles = processdata.setup_percentiles_pediatrics(bmi_percentiles)
-wt_percentiles = pd.read_csv("wtage.csv")
-wt_percentiles = processdata.setup_percentiles_pediatrics(wt_percentiles)
-ht_percentiles = pd.read_csv("statage.csv")
-ht_percentiles = processdata.setup_percentiles_pediatrics(ht_percentiles)
+bmi_percentiles = processdata.setup_percentiles_pediatrics("bmiagerev.csv")
+wt_percentiles = processdata.setup_percentiles_pediatrics("wtage.csv")
+ht_percentiles = processdata.setup_percentiles_pediatrics("statage.csv")
 
 
 # In[13]:

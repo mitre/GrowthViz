@@ -13,7 +13,7 @@ def setup_individual_obs_df(obs_df, mode):
     df['age'] = df['agedays'] / 365 
     df.drop(columns=['agedays'], inplace=True)
   else:
-    "Mode must be equal to adults or pediatrics"
+    raise ValueError("Mode must be equal to 'adults' or 'pediatrics'")
   df['clean_cat'] = df['clean_value'].astype('category')
   df['include'] = df.clean_value.eq("Include")
   return df
@@ -25,12 +25,11 @@ def setup_percentiles_adults(percentiles):
   range_col = pct.apply(lambda row: row.Age_high - row.Age_low + 1, axis=1)
   pct = pct.assign(range=range_col.values)
   dta = pd.DataFrame((np.repeat(pct.values, pct['range'], axis=0)), columns=pct.columns)
-  dta['count'] = dta.groupby(['Sex', 'Measure', 'Age_low', 'Age_high']).cumcount() # ['range'].transform('cumcount')
+  dta['count'] = dta.groupby(['Sex', 'Measure', 'Age_low', 'Age_high']).cumcount() 
   dta['age'] = dta['Age_low'] + dta['count']
   # add standard deviation and other values
   dta['sqrt'] = np.sqrt(pd.to_numeric(dta['Number of examined persons']))
   dta['sd'] = dta['Standard error of the mean'] * dta['sqrt']
-  #dta['sex'] = np.where(dta['Sex'] == 'Male', 0, 1)
   dta['Sex'] = dta.Sex.replace('Male', 0).replace('Female', 1)
   dta.rename(columns={'Measure':'param'}, inplace=True)
   dta.drop(columns=['Age (All race and Hispanic-origin groups)', 'Age_low', 'sqrt', 'Standard error of the mean',
@@ -45,7 +44,7 @@ def setup_percentiles_adults(percentiles):
   dta = dta.reindex(columns=col_list)
   return dta
 
-def setup_percentiles_pediatrics(percentiles):
+def setup_percentiles_pediatrics(percentiles_file):
   percentiles = pd.read_csv(percentiles_file, dtype={'Agemos': float, 'P5': float,
     'P50': float, 'P95': float, 'L': float, 'M': float, 'S': float, 'Sex': int})
   percentiles['age'] = percentiles['Agemos'] / 12
@@ -53,7 +52,6 @@ def setup_percentiles_pediatrics(percentiles):
   # which uses a numeric value of 0 (male) or 1 (female).
   # This aligns things to the growthcleanr values
   percentiles['Sex'] = percentiles['Sex'] - 1
-  #percentiles.drop(columns=['Sex'], inplace=True)
   return percentiles
 
 def keep_age_range(df, mode):
