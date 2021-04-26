@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
-import math
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from IPython.display import FileLink, FileLinks, Markdown
+from IPython.display import FileLinks
 
 
 def setup_individual_obs_df(obs_df, mode):
@@ -211,14 +210,14 @@ def setup_merged_df(obs_df, mode):
 
 def exclusion_information(obs):
     """
-  Provides a count and percentage of growthcleanr categories by measurement type (param).
+    Provides a count and percentage of growthcleanr categories by measurement type (param).
 
-  Parameters:
-  obs: a DataFrame, in the format output by setup_individual_obs_df
+    Parameters:
+    obs: a DataFrame, in the format output by setup_individual_obs_df
 
-  Returns:
-  A DataFrame with the counts and percentages
-  """
+    Returns:
+    A DataFrame with the counts and percentages
+    """
     exc = (
         obs.groupby(["param", "clean_cat"])
         .agg({"id": "count"})
@@ -291,18 +290,18 @@ def export_to_csv(da_locals, selection_widget, out):
 
 def clean_swapped_values(merged_df):
     """
-  This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-  "Swapped-Measurements". It will then swap the height and weight values for those rows.
-  It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
-  The values for these columns is copied from the original categories except in the case where
-  swaps are fixed when it is set to "Include-Fixed-Swap".
+    This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
+    "Swapped-Measurements". It will then swap the height and weight values for those rows.
+    It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
+    The values for these columns is copied from the original categories except in the case where
+    swaps are fixed when it is set to "Include-Fixed-Swap".
 
-  Parameters:
-  merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+    Parameters:
+    merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
 
-  Returns:
-  The cleaned DataFrame
-  """
+    Returns:
+    The cleaned DataFrame
+    """
     merged_df["postprocess_height_cat"] = merged_df["height_cat"]
     merged_df["postprocess_height_cat"] = merged_df[
         "postprocess_height_cat"
@@ -328,18 +327,18 @@ def clean_swapped_values(merged_df):
 
 def clean_unit_errors(merged_df):
     """
-  This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-  "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight values to convert them.
-  It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
-  The values for these columns are copied from the original categories except in the case where
-  unit errors are fixed when it is set to "Include-UH" or "Include-UL" respectively.
+    This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
+    "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight values to convert them.
+    It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
+    The values for these columns are copied from the original categories except in the case where
+    unit errors are fixed when it is set to "Include-UH" or "Include-UL" respectively.
 
-  Parameters:
-  merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+    Parameters:
+    merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
 
-  Returns:
-  The cleaned DataFrame
-  """
+    Returns:
+    The cleaned DataFrame
+    """
     merged_df["postprocess_height_cat"] = merged_df["height_cat"]
     merged_df["postprocess_height_cat"] = merged_df[
         "postprocess_height_cat"

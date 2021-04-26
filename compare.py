@@ -1,40 +1,36 @@
 import pandas as pd
 import numpy as np
-import math
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from IPython.display import FileLink, FileLinks, Markdown
 
 
 def prepare_for_comparison(frame_dict):
     """
-  This is the function that should be used when planning on comparing multiple runs to one another.
-  It takes in a dictionary of run names to run DataFrames. It outputs a single DataFrame with an
-  additional run_name column. This is the format expected by other functions that perform run
-  comparison.
+    This is the function that should be used when planning on comparing multiple runs to one another.
+    It takes in a dictionary of run names to run DataFrames. It outputs a single DataFrame with an
+    additional run_name column. This is the format expected by other functions that perform run
+    comparison.
 
-  Parameters:
-  frame_dict: A dictionary where the keys are the user specified name of a particular growthcleanr
-    run and the values are DataFrames, in the format output by setup_individual_obs_df.
+    Parameters:
+    frame_dict: A dictionary where the keys are the user specified name of a particular growthcleanr
+      run and the values are DataFrames, in the format output by setup_individual_obs_df.
 
-  Returns:
-  A single DataFrame in the same format as returned by setup_individual_obs_df but with an additional
-  run_name column.
-  """
+    Returns:
+    A single DataFrame in the same format as returned by setup_individual_obs_df but with an additional
+    run_name column.
+    """
     frames = list(map(lambda i: i[1].assign(run_name=i[0]), frame_dict.items()))
     return pd.concat(frames)
 
 
 def count_comparison(combined_df):
     """
-  Provides a DataFrame that compares counts of growthcleanr categories between runs.
+    Provides a DataFrame that compares counts of growthcleanr categories between runs.
 
-  Parameters:
-  combined_df: A DataFrame in the format provided by prepare_for_comparison
+    Parameters:
+    combined_df: A DataFrame in the format provided by prepare_for_comparison
 
-  Returns:
-  A DataFrame where the categories are the index and the columns are the run names.
-  """
+    Returns:
+    A DataFrame where the categories are the index and the columns are the run names.
+    """
     grouped = (
         combined_df.groupby(["run_name", "clean_value"])
         .agg({"id": "count"})
@@ -52,15 +48,15 @@ def count_comparison(combined_df):
 
 def subject_comparison_category_counts(combined_df):
     """
-  Provides a DataFrame that counts the number of subjects with at least one measurement in one of the
-  growthcleanr categories, by run.
+    Provides a DataFrame that counts the number of subjects with at least one measurement in one of the
+    growthcleanr categories, by run.
 
-  Parameters:
-  combined_df: A DataFrame in the format provided by prepare_for_comparison
+    Parameters:
+    combined_df: A DataFrame in the format provided by prepare_for_comparison
 
-  Returns:
-  A DataFrame where the categories are the index and the columns are the run names.
-  """
+    Returns:
+    A DataFrame where the categories are the index and the columns are the run names.
+    """
     grouped = (
         combined_df.groupby(["run_name", "clean_value"])
         .agg({"subjid": "nunique"})
@@ -90,15 +86,15 @@ def subject_comparison_category_counts(combined_df):
 
 def subject_comparison_percentage(combined_df):
     """
-  Provides a DataFrame that computes the percentage of subjects with at least one measurement in one of the
-  growthcleanr categories, by run.
+    Provides a DataFrame that computes the percentage of subjects with at least one measurement in one of the
+    growthcleanr categories, by run.
 
-  Parameters:
-  combined_df: A DataFrame in the format provided by prepare_for_comparison
+    Parameters:
+    combined_df: A DataFrame in the format provided by prepare_for_comparison
 
-  Returns:
-  A DataFrame where the categories are the index and the columns are the run names.
-  """
+    Returns:
+    A DataFrame where the categories are the index and the columns are the run names.
+    """
     grouped = (
         combined_df.groupby(["run_name", "clean_value"])
         .agg({"subjid": "nunique"})
@@ -120,16 +116,16 @@ def subject_comparison_percentage(combined_df):
 
 def subject_stats_comparison(combined_df):
     """
-  Calculates the percentage of subjects with an exclusion and the rate of exclusions per
-  patient.
+    Calculates the percentage of subjects with an exclusion and the rate of exclusions per
+    patient.
 
-  Parameters:
-  combined_df: A DataFrame in the format provided by prepare_for_comparison
+    Parameters:
+    combined_df: A DataFrame in the format provided by prepare_for_comparison
 
-  Returns:
-  A DataFrame with run names as the index and the columns of percentages of subjects and
-  rates of exclusion.
-  """
+    Returns:
+    A DataFrame with run names as the index and the columns of percentages of subjects and
+    rates of exclusion.
+    """
     stats = []
     for rn in combined_df.run_name.unique():
         total_subjects = combined_df[combined_df.run_name == rn].subjid.nunique()
