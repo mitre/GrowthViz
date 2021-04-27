@@ -138,7 +138,7 @@ obs = processdata.keep_age_range(obs_full, 'adults')
 charts.weight_distr(obs)
 
 
-# The following cell loads in the [CDC Growth Chart Percentile Data Files](https://www.cdc.gov/growthcharts/percentile_data_files.htm). Functions coerce some values into numeric types. It also add an `age` column which is a decimal value representing age in years. Finally, `Sex` is transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). This data is used to plot percentile bands in visualizations in the tool. 
+# The following cell loads in the [CDC Anthropometric Reference Data for Adults](https://www.cdc.gov/nchs/data/series/sr_03/sr03-046-508.pdf). Rows, which represent decades (e.g., 20-29), are expanded so that there is one record per year. Standard deviation is calculated from the count of examined persons and the standard error. `Sex` is then transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). Finally, percentiles are smoothed across decade changes (e.g., any change happens gradually from 29 to 31). This data is used to plot percentile bands in visualizations in the tool. 
 
 # In[12]:
 
@@ -157,6 +157,8 @@ ht_percentiles = percentiles_clean[percentiles_clean['param'] == 'HEIGHTCM']
 
 percentiles_clean.head(15)
 
+
+# In this cell, the percentiles data are reshaped to provide mean and standard deviation values for each parameter that will later be used for z-score calculations.
 
 # In[13]:
 
@@ -186,6 +188,8 @@ percentiles_long.head()
 merged_df = processdata.setup_merged_df(obs, 'adults')
 merged_df.head()
 
+
+# In the following cell, `processdata.setup_bmi_adults` calculates BMI for each weight and height pairing to be used in later individual trajectory visualizations.
 
 # In[15]:
 
@@ -253,15 +257,13 @@ widgets.VBox([g, out])
 # 
 # # Visualizing an Individual Trajectory
 # 
-# The cell below creates a plot for an individual. It shows either the weight trajectory or height tragectory depending on the `param` value that is selected. The black bands in the diagram represent the 5th and 95th percentile values for age and sex for the given measurement type.
+# The cell below creates a plot for an individual. It shows either the weight trajectory or height tragectory depending on the `param` value that is selected. The black bands in the diagram represent the 5th and 95th percentile values for age and sex for the given measurement type. For BMI tables, the bands used can be found in the [CDC Definitions of Obesity](https://www.cdc.gov/obesity/adult/defining.html). 
 # 
 # In this chart, the blue line represents all measurements for an individual. Any values marked for exclusion are represented with a red x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle, unless `include_carry_forward` is set to False, when they will also be represented as a red x.
 
 # In[18]:
 
 
-# using these BMI bands: https://www.cdc.gov/obesity/adult/defining.html
-# colorblind resources: https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40
 all_ids = cleaned_obs['subjid'].unique()
 val = 'd88d3987-93ff-0820-286f-754cd971012d' if 'd88d3987-93ff-0820-286f-754cd971012d' in all_ids else np.random.choice(all_ids, size=1, replace=False) # another good id: 25477664
 interactive(charts.overlap_view_adults, obs_df=fixed(obs_wbmi), 
@@ -298,12 +300,11 @@ charts.overlap_view_adults(obs_df=obs_wbmi, subjid=val, param='HEIGHTCM', includ
 
 # # Visualizing Multiple Trajectories at Once
 # 
-# Next, the tool creates a series that contains the unique set of `subjid`s and stores that in `uniq_ids`.
+# Next, the tool creates a series that contains the unique set of `subjid`s that have more than one record per category (as determined by `charts.mult_obs`) and stores that in `uniq_ids`.
 
 # In[21]:
 
 
-# identify people with more than one record per category
 obs_wbmi_mult = charts.mult_obs(obs_wbmi)
 uniq_ids = obs_wbmi_mult['subjid'].unique()
 
@@ -347,7 +348,7 @@ charts.five_by_five_view(obs_wbmi, sample, 'HEIGHTCM', wt_percentiles, ht_percen
 
 # ## Visualizing the Top/Bottom 25 for a Given Category
 # 
-# The following cell uses the same function as above to create a 5 x 5 set of small multiple charts, but selects the top/bottom 25 individuals by growthcleanr category.
+# The following cell uses the same function as above to create a 5 x 5 set of small multiple charts, but selects the top/bottom 25 individuals by growthcleanr category. The results can be sorted by maximum parameter, minimum parameter, starting age, or size of age range.
 
 # In[26]:
 
@@ -369,7 +370,7 @@ interact(edge25, cleaned_obs = fixed(obs_wbmi_mult), category = cleaned_obs.clea
 
 # # Visualizing Changes in Trajectory
 # 
-# The `charts.bmi_with_percentiles` function displays a chart showing BMI for an individual over time. Black bands representing the 5th and 95th BMI percentile for age and sex are shown with the individual's BMI shown in blue. The plot on the left represents all values. The plot on the right is only included values.
+# The `charts.param_with_percentiles` function displays a chart showing BMI, height, or weight for an individual over time. Black bands representing the 5th and 95th percentiles for age and sex are shown with the individual's BMI, height, or weight shown in blue. The plot on the left represents all values. The plot on the right is only included values.
 
 # In[27]:
 
