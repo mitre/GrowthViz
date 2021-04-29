@@ -10,13 +10,26 @@ def setup_individual_obs_df(obs_df, mode):
     if mode == "adults":
         df.rename(columns={"result": "clean_value", "age_years": "age"}, inplace=True)
     elif mode == "pediatrics":
-        df["age"] = df["agedays"] / 365
+        df["age"] = df["agedays"] / 365.25
         df.drop(columns=["agedays"], inplace=True)
     else:
         raise ValueError("Mode must be equal to 'adults' or 'pediatrics'")
     df["clean_cat"] = df["clean_value"].astype("category")
     df["include"] = df.clean_value.eq("Include")
-    return df
+    return df[
+        [
+            "id",
+            "subjid",
+            "param",
+            "measurement",
+            "age",
+            "sex",
+            "clean_value",
+            "reason",
+            "clean_cat",
+            "include",
+        ]
+    ]
 
 
 def setup_percentiles_adults(percentiles):
@@ -373,4 +386,3 @@ def clean_unit_errors(merged_df):
     ] = "Include-UH"
     merged_df["bmi"] = merged_df["weight"] / ((merged_df["height"] / 100) ** 2)
     return merged_df
-
