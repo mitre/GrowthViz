@@ -147,12 +147,6 @@ wt_percentiles = processdata.setup_percentiles_pediatrics("wtage.csv")
 ht_percentiles = processdata.setup_percentiles_pediatrics("statage.csv")
 
 
-# In[13]:
-
-
-bmi_percentiles.head()
-
-
 # In a previous cell, the tool creates the `obs` DataFrame. In that structure there is one measurement, either height or weight, per row. In this cell, the `processdata.setup_merged_df` function will create a DataFrame where a height observation and weight observation for the same `subjid` on the same `agedays` are combined into a single row. Several new columns are added to the resulting DataFrame:
 # 
 # | Column | Description |
