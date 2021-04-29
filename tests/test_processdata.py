@@ -64,7 +64,7 @@ class DataTestCase(unittest.TestCase):
                     "rounded_age",
                 ]
             ),
-            set(list(merge_df.columns)),
+            set(merge_df.columns),
         )
 
     def test_sex(self):
@@ -76,7 +76,6 @@ class PctAdultTestCase(unittest.TestCase):
     def setUp(self):
         self.df = pd.read_csv("vdsmeasures.csv", encoding="latin1")
 
-    # fill in
     def test_vdsmeasures_data(self):
         self.assertEqual(0, self.df["Number of examined persons"].isnull().sum())
         self.assertEqual(0, self.df["Standard error of the mean"].isnull().sum())

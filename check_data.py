@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 import numpy as np
 
@@ -13,15 +12,15 @@ def check_patient_data(file, mode):
         raise ValueError("mode must be 'adults' or 'pediatrics")
 
     warnings_list = []
-    if d["sex"].isin([0, 1]).all() == False:
+    if d["sex"].isin([0, 1]).all() is False:
         warnings_list.append("'sex' contains values outside of 0 and 1")
-    if (d["age"] >= 0).all() == False:
+    if (d["age"] >= 0).all() is False:
         warnings_list.append("age column contains values less than zero")
     if d["age"].dtype != np.number:
         warnings_list.append("age column is not numeric")
-    if d["param"].isin(["WEIGHTKG", "HEIGHTCM"]).all() == False:
+    if d["param"].isin(["WEIGHTKG", "HEIGHTCM"]).all() is False:
         warnings_list.append("'param' contains values other than WEIGHTKG and HEIGHTCM")
-    if (d["measurement"] >= 0).all() == False:
+    if (d["measurement"] >= 0).all() is False:
         warnings_list.append("'measurement' contains values less than zero")
     needed_columns = ["subjid", "param", "measurement", "age", "sex", "result"]
     for nc in needed_columns:
