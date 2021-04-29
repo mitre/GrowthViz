@@ -117,37 +117,41 @@ def keep_age_range(df, mode):
     # create age buckets for chart
     def label_excl_grp(row):
         if mode == "adults":
-            if row["age"] < 20:
-                return " Below 20 (Exclude)"
-            if (row["age"] >= 20) & (row["age"] < 30):
-                return " Between 20 and 30"
+            if row["age"] < 18:
+                return " Below 18 (Exclude)"
+            if (row["age"] >= 18) & (row["age"] < 30):
+                return " From 18 to less than 30"
             if (row["age"] >= 30) & (row["age"] < 40):
-                return " Between 30 and 40"
+                return " From 30 to less than 40"
             if (row["age"] >= 40) & (row["age"] < 50):
-                return " Between 40 and 50"
+                return " From 40 to less than 50"
             if (row["age"] >= 50) & (row["age"] < 60):
-                return " Between 50 and 60"
+                return " From 50 to less than 60"
             if (row["age"] >= 60) & (row["age"] < 65):
-                return " Between 60 and 65"
-            if row["age"] > 65:
-                return "Above 65 (Exclude)"
+                return " From 60 to less than 65"
+            if (row["age"] >= 65) & (row["age"] < 80):
+                return " From 65 to 80 (Not Recommended)"
+            if row["age"] > 80:
+                return "Above 80 (Exclude)"
         elif mode == "pediatrics":
             if row["age"] < 2:
                 return " Below 2 (Exclude)"
             if (row["age"] >= 2) & (row["age"] < 5):
-                return " Between 02 and 05"
+                return " From 02 to less than 05"
             if (row["age"] >= 5) & (row["age"] < 8):
-                return " Between 05 and 08"
+                return " From 05 to less than 08"
             if (row["age"] >= 8) & (row["age"] < 11):
-                return " Between 08 and 11"
+                return " From 08 to less than 11"
             if (row["age"] >= 11) & (row["age"] < 14):
-                return " Between 11 and 14"
+                return " From 11 to less than 14"
             if (row["age"] >= 14) & (row["age"] < 17):
-                return " Between 14 and 17"
+                return " From 14 to less than 17"
             if (row["age"] >= 17) & (row["age"] <= 20):
-                return " Between 17 and 20"
-            if row["age"] > 20:
-                return "Above 20 (Exclude)"
+                return " From 17 to less than 20"
+            if (row["age"] >= 20) & (row["age"] <= 25):
+                return " From 20 to 25 (Not Recommended)"
+            if row["age"] > 25:
+                return "Above 25 (Exclude)"
 
     label_excl_col = obs_grp.apply(lambda row: label_excl_grp(row), axis=1)
     obs_grp = obs_grp.assign(cat=label_excl_col.values)
@@ -160,21 +164,35 @@ def keep_age_range(df, mode):
     # assign bar colors
     cat_list = obs_grp["cat"].values.tolist()
     color_list = []
+    patterns = []
     for n in cat_list:
         if ("Below" in n) | ("Above" in n):
             color_list = color_list + ["C3"]
-        if "Between" in n:
+            patterns = patterns + ["x"]
+        if ("From" in n) & ("Not" not in n):
             color_list = color_list + ["C0"]
+            patterns = patterns + [""]
+        if "Not" in n:
+            color_list = color_list + ["orange"]
+            patterns = patterns + ["/"]
     # create chart
-    obs_grp_plot = obs_grp.plot.bar("cat", "subjid", color=color_list, legend=None)
-    obs_grp_plot.set_xlabel("")
+    fig, ax1 = plt.subplots()
+    obs_grp_plot = plt.bar(
+        obs_grp["cat"],
+        obs_grp["subjid"],
+        color=color_list,
+    )
+    for bar, pattern in zip(obs_grp_plot, patterns):
+        bar.set_hatch(pattern)
     plt.xticks(rotation=45, ha="right")
-    obs_grp_plot.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
+    ax1.get_yaxis().set_major_formatter(
+        mpl.ticker.FuncFormatter(lambda x, p: format(int(x), ","))
+    )
     # return specified age range
     if mode == "adults":
-        return df[df["age"].between(20, 65, inclusive=True)]
+        return df[df["age"].between(18, 80, inclusive=True)]
     elif mode == "pediatrics":
-        return df[df["age"].between(2, 20, inclusive=True)]
+        return df[df["age"].between(2, 25, inclusive=True)]
 
 
 def setup_merged_df(obs_df, mode):
