@@ -121,36 +121,36 @@ def keep_age_range(df, mode):
             if row["age"] < 18:
                 return " Below 18 (Exclude)"
             if (row["age"] >= 18) & (row["age"] < 30):
-                return " From 18 to less than 30"
+                return " 18 to < 30"
             if (row["age"] >= 30) & (row["age"] < 40):
-                return " From 30 to less than 40"
+                return " 30 to < 40"
             if (row["age"] >= 40) & (row["age"] < 50):
-                return " From 40 to less than 50"
+                return " 40 to < 50"
             if (row["age"] >= 50) & (row["age"] < 60):
-                return " From 50 to less than 60"
-            if (row["age"] >= 60) & (row["age"] < 65):
-                return " From 60 to less than 65"
-            if (row["age"] >= 65) & (row["age"] < 80):
-                return " From 65 to 80 (Not Recommended)"
+                return " 50 to < 60"
+            if (row["age"] >= 60) & (row["age"] <= 65):
+                return " 60 to 65"
+            if (row["age"] > 65) & (row["age"] <= 80):
+                return " > 65 to 80 (Not Recommended)"
             if row["age"] > 80:
                 return "Above 80 (Exclude)"
         elif mode == "pediatrics":
             if row["age"] < 2:
                 return " Below 2 (Exclude)"
             if (row["age"] >= 2) & (row["age"] < 5):
-                return " From 02 to less than 05"
+                return " 02 to < 05"
             if (row["age"] >= 5) & (row["age"] < 8):
-                return " From 05 to less than 08"
+                return " 05 to < 08"
             if (row["age"] >= 8) & (row["age"] < 11):
-                return " From 08 to less than 11"
+                return " 08 to < 11"
             if (row["age"] >= 11) & (row["age"] < 14):
-                return " From 11 to less than 14"
+                return " 11 to < 14"
             if (row["age"] >= 14) & (row["age"] < 17):
-                return " From 14 to less than 17"
+                return " 14 to < 17"
             if (row["age"] >= 17) & (row["age"] <= 20):
-                return " From 17 to less than 20"
-            if (row["age"] >= 20) & (row["age"] <= 25):
-                return " From 20 to 25 (Not Recommended)"
+                return " 17 to 20"
+            if (row["age"] > 20) & (row["age"] <= 25):
+                return " > 20 to 25 (Not Recommended)"
             if row["age"] > 25:
                 return "Above 25 (Exclude)"
 
@@ -170,7 +170,7 @@ def keep_age_range(df, mode):
         if ("Below" in n) | ("Above" in n):
             color_list = color_list + ["C3"]
             patterns = patterns + ["x"]
-        if ("From" in n) & ("Not" not in n):
+        if ("to" in n) & ("Not" not in n):
             color_list = color_list + ["C0"]
             patterns = patterns + [""]
         if "Not" in n:

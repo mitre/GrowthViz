@@ -122,7 +122,7 @@ obs_full = processdata.setup_individual_obs_df(cleaned_obs, 'pediatrics')
 
 # In the following cell, the `processdata.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily adults, you will want to switch to the adults notebooks. The function then **removes** patients in the excluded categories (below 2 and above 25).
 
-# In[12]:
+# In[43]:
 
 
 obs = processdata.keep_age_range(obs_full, 'pediatrics')
