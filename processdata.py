@@ -6,7 +6,7 @@ from IPython.display import FileLinks
 
 
 def setup_individual_obs_df(obs_df, mode):
-    df = obs_df
+    df = obs_df.copy()
     if mode == "adults":
         df.rename(columns={"result": "clean_value", "age_years": "age"}, inplace=True)
     elif mode == "pediatrics":
@@ -16,20 +16,21 @@ def setup_individual_obs_df(obs_df, mode):
         raise ValueError("Mode must be equal to 'adults' or 'pediatrics'")
     df["clean_cat"] = df["clean_value"].astype("category")
     df["include"] = df.clean_value.eq("Include")
-    return df[
-        [
-            "id",
-            "subjid",
-            "param",
-            "measurement",
-            "age",
-            "sex",
-            "clean_value",
-            "reason",
-            "clean_cat",
-            "include",
-        ]
+    col_list = [
+        "id",
+        "subjid",
+        "param",
+        "measurement",
+        "age",
+        "sex",
+        "clean_value",
+        "clean_cat",
+        "include",
     ]
+    if mode == "adults":
+        return df[col_list + ["reason"]]
+    elif mode == "pediatrics":
+        return df[col_list]
 
 
 def setup_percentiles_adults(percentiles):

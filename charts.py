@@ -13,6 +13,7 @@ def weight_distr(df, mode):
         plt.title("All Weights")
     if len(wgt_grp.index) == 0:
         print("No included observations with weight (kg) >= 135")
+        plt.close()
     else:
         round_col = wgt_grp.apply(
             lambda row: np.around(row.measurement, decimals=0), axis=1
