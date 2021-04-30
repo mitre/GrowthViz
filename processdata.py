@@ -5,18 +5,14 @@ import matplotlib as mpl
 from IPython.display import FileLinks
 
 
-def setup_individual_obs_df(obs_df, mode):
+def setup_individual_obs_df(obs_df):
     """
     Standardizes adults and pediatrics files for clean processing in GrowthViz notebooks
     """
     df = obs_df.copy()
-    if mode == "adults":
-        df.rename(columns={"result": "clean_value", "age_years": "age"}, inplace=True)
-    elif mode == "pediatrics":
-        df["age"] = df["agedays"] / 365.25
-        df.drop(columns=["agedays"], inplace=True)
-    else:
-        raise ValueError("Mode must be equal to 'adults' or 'pediatrics'")
+    df.rename(columns={"clean_res": "clean_value"}, inplace=True)
+    df["age"] = df["agedays"] / 365.25
+    df.drop(columns=["agedays"], inplace=True)
     df["clean_cat"] = df["clean_value"].astype("category")
     df["include"] = df.clean_value.eq("Include")
     col_list = [
@@ -30,10 +26,7 @@ def setup_individual_obs_df(obs_df, mode):
         "clean_cat",
         "include",
     ]
-    if mode == "adults":
-        return df[col_list + ["reason"]]
-    elif mode == "pediatrics":
-        return df[col_list]
+    return df[col_list]
 
 
 def setup_percentiles_adults(percentiles):
@@ -131,7 +124,7 @@ def keep_age_range(df, mode):
     def label_excl_grp(row):
         if mode == "adults":
             if row["age"] < 18:
-                return " Below 18 (Exclude)"
+                return "  Below 18 (Exclude)"
             if (row["age"] >= 18) & (row["age"] < 30):
                 return " 18 to < 30"
             if (row["age"] >= 30) & (row["age"] < 40):
@@ -148,7 +141,7 @@ def keep_age_range(df, mode):
                 return "Above 80 (Exclude)"
         elif mode == "pediatrics":
             if row["age"] < 2:
-                return " Below 2 (Exclude)"
+                return "  Below 2 (Exclude)"
             if (row["age"] >= 2) & (row["age"] < 5):
                 return " 02 to < 05"
             if (row["age"] >= 5) & (row["age"] < 8):
@@ -208,7 +201,7 @@ def keep_age_range(df, mode):
         return df[df["age"].between(2, 25, inclusive=True)]
 
 
-def setup_merged_df(obs_df, mode):
+def setup_merged_df(obs_df):
     """
     Merges together weight and height data for calculating BMI
     """
@@ -231,8 +224,6 @@ def setup_merged_df(obs_df, mode):
             "height_y",
         ]
     )
-    if mode == "adults":
-        only_needed_columns.drop(columns=["reason_x"], inplace=True)
     clean_column_names = only_needed_columns.rename(
         columns={
             "clean_cat_x": "height_cat",

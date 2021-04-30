@@ -67,15 +67,20 @@ check_for_file(
 
 # Check for the example csv files
 check_for_file(
-    "sample-data-cleaned.csv", "Unable to find example pediatrics growthcleanr output."
+    "growthviz-data/sample-data-cleaned.csv",
+    "Unable to find example pediatrics growthcleanr output for comparison.",
 )
 check_for_file(
-    "sample-data-cleaned-with-ue.csv",
-    "Unable to find example pediatrics growthcleanr output with unit errors turned on.",
+    "growthviz-data/sample-data-cleaned-with-ue.csv",
+    "Unable to find example pediatrics growthcleanr output with unit errors turned on for comparison.",
 )
 check_for_file(
-    "growthviz-data/sample-adults-cleaned.csv",
+    "growthviz-data/sample-adults-data.csv",
     "Unable to example adults growthcleanr output.",
+)
+check_for_file(
+    "growthviz-data/sample-pediatrics-data.csv",
+    "Unable to example pediatrics growthcleanr output.",
 )
 
 print("GrowthViz appears to be properly set up.")

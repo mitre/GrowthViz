@@ -96,14 +96,14 @@ import check_data
 # | agedays | Number representing the age of the patient in days when the observation was obtained |
 # | param | The type of observation along with units. Expected values are *HEIGHTCM* and *WEIGHTKG* |
 # | measurement | A decimal number that represents the observation value. |
-# | clean_value | The categorization of the observation by growthcleanr. |
+# | clean_res | The categorization of the observation by growthcleanr. |
 # 
 # This information will be loaded into a [pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html) called `cleaned_obs`
 
 # In[7]:
 
 
-cleaned_obs = pd.read_csv("growthviz-data/sample-adults-cleaned.csv")
+cleaned_obs = pd.read_csv("growthviz-data/sample-adults-data.csv")
 
 
 # The following cell shows what the first five rows look like in the CSV file
@@ -119,7 +119,7 @@ cleaned_obs.head()
 # In[9]:
 
 
-warnings = check_data.check_patient_data("growthviz-data/sample-adults-cleaned.csv", "adults")
+warnings = check_data.check_patient_data("growthviz-data/sample-adults-data.csv")
 if warnings:
     for warning in warnings:
         print(warning)
@@ -132,7 +132,7 @@ else:
 # In[10]:
 
 
-obs_full = processdata.setup_individual_obs_df(cleaned_obs, 'adults')
+obs_full = processdata.setup_individual_obs_df(cleaned_obs)
 
 
 # In[11]:
@@ -210,7 +210,7 @@ percentiles_wide.head()
 # In[17]:
 
 
-merged_df = processdata.setup_merged_df(obs, 'adults')
+merged_df = processdata.setup_merged_df(obs)
 merged_df.head()
 
 
@@ -219,7 +219,6 @@ merged_df.head()
 # In[18]:
 
 
-# create BMI data to add below for individual trajectories
 obs_wbmi = processdata.setup_bmi_adults(merged_df, obs)  
 
 
@@ -357,15 +356,15 @@ charts.five_by_five_view(obs_wbmi, sample, 'HEIGHTCM', wt_percentiles, ht_percen
 # 
 # This tool can be used to create samples that are tailored to specific interests. Views can easily be created on existing DataFrames and be used to generate different samples. Functionality available is described in the [Pandas DataFrame documentation](https://pandas.pydata.org/pandas-docs/stable/reference/frame.html).
 # 
-# The cell below selects all observations with a weight exclusion of "Exclude-EWMA-Extreme". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results.
+# The cell below selects all observations with a weight exclusion of "Exclude-Moderate-EWMA". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer examples than 25, no chart is generated. 
 
 # In[28]:
 
 
-# TO DO WHEN WE HAVE MORE EXCLUSION CATEGORIES
-#top_weight_extreme_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-EWMA-Extreme'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
-#ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, size=25, replace=False)
-#charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles)
+top_weight_moderate_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-Moderate-EWMA'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
+if len(top_weight_moderate_ewma_ids) >= 25:
+    ewma_sample = np.random.choice(top_weight_moderate_ewma_ids, size=25, replace=False)
+    charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles, bmi_percentiles, 'dotted')
 
 
 # ## Visualizing the Top/Bottom 25 for a Given Category
@@ -493,9 +492,9 @@ display(ui, out)
 
 # # Post Processing Data
 # 
-# This tool provides functions that allow the post processing of data. `processdata.clean_swapped_values` will look in a DataFrame for rows where the `height_cat` and `weight_cat` are set to "Swapped-Measurements". It will then swap the `height` and `weight` values for those rows. It will also create two new columns: `postprocess_height_cat` and `postprocess_weight_cat`. The values for these columns is copied from the original categories except in the case where swaps are fixed when it is set to "Include-Fixed-Swap".
+# This tool provides functions that allow the post processing of data. `processdata.clean_swapped_values` will look in a DataFrame for rows where the `height_cat` and `weight_cat` are set to "Exclude-Swaps-RV". It will then swap the `height` and `weight` values for those rows. It will also create two new columns: `postprocess_height_cat` and `postprocess_weight_cat`. The values for these columns is copied from the original categories except in the case where swaps are fixed when it is set to "Include-Fixed-Swap".
 # 
-# `processdata.clean_unit_errors` will look in a data frame for rows where the `height_cat` and `weight_cat` are set to "Unit-Error-High". It will divide or multiply the value to convert it to metric.
+# `processdata.clean_unit_errors` will look in a data frame for rows where the `height_cat` and `weight_cat` are set to "Exclude-Unit-Errors". It will divide or multiply the value to convert it to metric.
 # 
 # The cell below copies the merged DataFrame and then cleans the swapped values.
 
@@ -504,7 +503,7 @@ display(ui, out)
 
 cleaned = merged_df.copy()
 cleaned = processdata.clean_swapped_values(cleaned)
-cleaned[cleaned.height_cat == 'Swapped-Measurements'].head()
+cleaned[cleaned.weight_cat == 'Exclude-Swaps-RV'].head()
 
 
 # The cell below copies the merged DataFrame and then cleans the unit errors. Note: To see results in the table below with the example data you may need to swap "clean_with_swaps.csv" for "clean_with_uswaps.csv" and rerun the cells in the "Loading Data" section above. The default example set has swaps but not unit errors.
@@ -514,7 +513,7 @@ cleaned[cleaned.height_cat == 'Swapped-Measurements'].head()
 
 cleaned = merged_df.copy()
 cleaned = processdata.clean_unit_errors(cleaned)
-cleaned[cleaned.height_cat == 'Unit-Error-High'].head()
+cleaned[cleaned.height_cat == 'Exclude-Unit-Errors'].head()
 
 
 # # Developing New Visualizations
