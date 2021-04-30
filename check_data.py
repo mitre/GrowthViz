@@ -2,15 +2,9 @@ import pandas as pd
 import numpy as np
 
 
-def check_patient_data(file, mode):
+def check_patient_data(file):
     d = pd.read_csv(file)
-    if mode == "pediatrics":
-        d.rename(columns={"agedays": "age"}, inplace=True)
-    elif mode == "adults":
-        d.rename(columns={"age_years": "age"}, inplace=True)
-    else:
-        raise ValueError("mode must be 'adults' or 'pediatrics")
-
+    d.rename(columns={"agedays": "age"}, inplace=True)
     warnings_list = []
     if d["sex"].isin([0, 1]).all() is False:
         warnings_list.append("'sex' contains values outside of 0 and 1")
@@ -22,7 +16,7 @@ def check_patient_data(file, mode):
         warnings_list.append("'param' contains values other than WEIGHTKG and HEIGHTCM")
     if (d["measurement"] >= 0).all() is False:
         warnings_list.append("'measurement' contains values less than zero")
-    needed_columns = ["subjid", "param", "measurement", "age", "sex", "result"]
+    needed_columns = ["subjid", "param", "measurement", "age", "sex", "clean_res"]
     for nc in needed_columns:
         if nc not in d.columns:
             warnings_list.append(nc + " column not included in patient data")
