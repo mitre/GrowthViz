@@ -307,7 +307,8 @@ def data_frame_names(da_locals):
     frames = []
     for key, value in da_locals.items():
         if isinstance(value, pd.DataFrame):
-            frames.append(key)
+            if key.startswith("_") is False:
+                frames.append(key)
     return frames
 
 
