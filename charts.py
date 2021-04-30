@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 
 
 def weight_distr(df, mode):
+    """
+    Create charts with overall and outlier weight distributions (included values only)
+    """
     wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
     if mode == "high":
         wgt_grp = wgt_grp[wgt_grp["measurement"] >= 135]
@@ -571,19 +574,3 @@ def top_ten(
     else:
         out.clear_output()
         out.append_display_data(working_set)
-
-
-def cutoff_view(merged_df, subjid, cutoff, wt_df):
-    individual = merged_df[merged_df.subjid == subjid]
-    selected_param = individual[individual.include_weight == True]
-    selected_param_plot = selected_param.plot.line(
-        x="age", y="weight", marker=".", color="k"
-    )
-    cutoffs = individual[np.absolute(individual.wtz) > cutoff]
-    selected_param_plot.scatter(x=cutoffs.age, y=cutoffs.weight, c="b", marker="o")
-    # percentile_window = wt_df.loc[(wt_df.Sex == individual.sex.min()) &
-    #                               (wt_df.age > individual.age.min()) &
-    #                               (wt_df.age < individual.age.max())]
-    # selected_param_plot.plot(percentile_window.age, percentile_window.P5, color='k')
-    # selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
-    return selected_param_plot

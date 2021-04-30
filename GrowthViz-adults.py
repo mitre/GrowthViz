@@ -409,7 +409,21 @@ interact(charts.param_with_percentiles, merged_df = fixed(obs_wbmi),
 # 
 # The next cell generates summary statistics for the data set. The `sumstats.bmi_stats` function uses the `merged_df` DataFrame to compute values on the "clean" data, which means only included values as well as the "raw" values, which is all values for individuals.
 # 
-# The buttons can be used to add or remove columns from the table.
+# | Column Name | Definition |
+# |--------|-------------|
+# | min_clean | Minimum Clean BMI Value |
+# | mean_clean | Average Clean BMI Value |
+# | max_clean | Maximum Clean BMI Value |
+# | sd_clean | Standard Deviation of Clean BMI Values |
+# | count_clean | Count of Patient Records with Clean BMI Values |
+# | min_raw | Minimum Raw BMI Value |
+# | mean_raw | Average Raw BMI Value |
+# | max_raw | Maximum Raw BMI Value |
+# | sd_raw | Standard Deviation of Raw BMI Values |
+# | count_raw | Count of All Patient Records |
+# | count_diff | Count of Patient Records with Excluded BMI Values |
+# 
+# The buttons can be used to add or remove columns from the table (all columns are shown by default - clicking a button will remove that column from the table).
 # The checkbox includes "missing" values (note: this will impact the raw columns as missing values may cause BMI values of infinity since they divide by 0 when missing). Missing values are not included by default.
 
 # In[31]:
@@ -440,12 +454,6 @@ widgets.interactive_output(sumstats.bmi_stats, {'merged_df': fixed(merged_df), '
 display(ui, out)
 
 
-# In[32]:
-
-
-_9
-
-
 # # Exporting Data
 # 
 # The following code allows you to export a DataFrame as a CSV file. When the cell below is run, the drop down will contain all DataFrames stored in variables in this notebook. Select the desired DataFrame and click Generate CSV. This will create the CSV file and provide a link to download it. DataFrames created in this notebook include:
@@ -466,7 +474,7 @@ _9
 # | mdf | Version of `merged_df` with added z-scores |
 # | obs_wbmi_mult | Version of `obs_wbmi` that only includes subjects with more than one recorded visit |
 
-# In[ ]:
+# In[32]:
 
 
 df_selector = widgets.Dropdown(options=processdata.data_frame_names(locals()), description='Data Frames')
@@ -483,12 +491,6 @@ generate_button.on_click(on_button_clicked)
 display(ui, out)
 
 
-# In[ ]:
-
-
-_10
-
-
 # # Post Processing Data
 # 
 # This tool provides functions that allow the post processing of data. `processdata.clean_swapped_values` will look in a DataFrame for rows where the `height_cat` and `weight_cat` are set to "Swapped-Measurements". It will then swap the `height` and `weight` values for those rows. It will also create two new columns: `postprocess_height_cat` and `postprocess_weight_cat`. The values for these columns is copied from the original categories except in the case where swaps are fixed when it is set to "Include-Fixed-Swap".
@@ -497,7 +499,7 @@ _10
 # 
 # The cell below copies the merged DataFrame and then cleans the swapped values.
 
-# In[ ]:
+# In[33]:
 
 
 cleaned = merged_df.copy()
@@ -507,7 +509,7 @@ cleaned[cleaned.height_cat == 'Swapped-Measurements'].head()
 
 # The cell below copies the merged DataFrame and then cleans the unit errors. Note: To see results in the table below with the example data you may need to swap "clean_with_swaps.csv" for "clean_with_uswaps.csv" and rerun the cells in the "Loading Data" section above. The default example set has swaps but not unit errors.
 
-# In[ ]:
+# In[34]:
 
 
 cleaned = merged_df.copy()
@@ -519,7 +521,7 @@ cleaned[cleaned.height_cat == 'Unit-Error-High'].head()
 # 
 # Users may take advantage of the predefined `sumstats.bmi_stats`, `charts.bmi_with_percentiles`, `charts.five_by_five_view`, `charts.overlap_view_adults` and `charts.top_ten` functions. For more information on these functions, execute the function name ending with a "?", which will bring up the inline help window. For example, `charts.five_by_five_view`
 
-# In[ ]:
+# In[35]:
 
 
 get_ipython().run_line_magic('pinfo', 'sumstats.bmi_stats')

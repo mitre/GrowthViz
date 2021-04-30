@@ -6,6 +6,9 @@ from IPython.display import FileLinks
 
 
 def setup_individual_obs_df(obs_df, mode):
+    """
+    Standardizes adults and pediatrics files for clean processing in GrowthViz notebooks
+    """
     df = obs_df.copy()
     if mode == "adults":
         df.rename(columns={"result": "clean_value", "age_years": "age"}, inplace=True)
@@ -34,6 +37,9 @@ def setup_individual_obs_df(obs_df, mode):
 
 
 def setup_percentiles_adults(percentiles):
+    """
+    Processes adults percentiles from CDC
+    """
     # expand decade rows into one row per year
     pct = percentiles[
         percentiles["Age (All race and Hispanic-origin groups)"] != "20 and over"
@@ -92,6 +98,9 @@ def setup_percentiles_adults(percentiles):
 
 
 def setup_percentiles_pediatrics(percentiles_file):
+    """
+    Processes pediatrics percentiles from CDC
+    """
     percentiles = pd.read_csv(
         percentiles_file,
         dtype={
@@ -114,6 +123,9 @@ def setup_percentiles_pediatrics(percentiles_file):
 
 
 def keep_age_range(df, mode):
+    """
+    Restricts patient data to acceptable age range for notebooks
+    """
     obs_grp = df
     # create age buckets for chart
     def label_excl_grp(row):
@@ -197,6 +209,9 @@ def keep_age_range(df, mode):
 
 
 def setup_merged_df(obs_df, mode):
+    """
+    Merges together weight and height data for calculating BMI
+    """
     obs_df = obs_df.assign(height=obs_df["measurement"], weight=obs_df["measurement"])
     obs_df.loc[obs_df.param == "WEIGHTKG", "height"] = np.NaN
     obs_df.loc[obs_df.param == "HEIGHTCM", "weight"] = np.NaN
@@ -273,6 +288,9 @@ def exclusion_information(obs):
 
 
 def label_incl(row):
+    """
+    Categorizes BMI calculations as Include, Implausible, or unable to calculate (Only Wt or Ht)
+    """
     if row["include_both"] == True:
         return "Include"
     elif (row["weight_cat"] == "Implausible") | (row["height_cat"] == "Implausible"):
@@ -282,6 +300,9 @@ def label_incl(row):
 
 
 def setup_bmi_adults(merged_df, obs):
+    """
+    Appends BMI data onto adults weight and height observations
+    """
     data = merged_df[
         [
             "id",
@@ -304,6 +325,9 @@ def setup_bmi_adults(merged_df, obs):
 
 
 def data_frame_names(da_locals):
+    """
+    Returns a list of dataframe names
+    """
     frames = []
     for key, value in da_locals.items():
         if isinstance(value, pd.DataFrame):
@@ -313,6 +337,9 @@ def data_frame_names(da_locals):
 
 
 def export_to_csv(da_locals, selection_widget, out):
+    """
+    Saves out csv file of dataframe
+    """
     df_name = selection_widget.value
     da_locals[df_name].to_csv(
         "growthviz-data/output/{}.csv".format(df_name), index=False

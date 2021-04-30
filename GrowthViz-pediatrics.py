@@ -353,7 +353,21 @@ interact(charts.bmi_with_percentiles, merged_df = fixed(merged_df),
 # 
 # The next cell generates summary statistics for the data set. The `sumstats.bmi_stats` function uses the `merged_df` DataFrame to compute values on the "clean" data, which means only included values as well as the "raw" values, which is all values for individuals.
 # 
-# The buttons can be used to add or remove columns from the table.
+# | Column Name | Definition |
+# |--------|-------------|
+# | min_clean | Minimum Clean BMI Value |
+# | mean_clean | Average Clean BMI Value |
+# | max_clean | Maximum Clean BMI Value |
+# | sd_clean | Standard Deviation of Clean BMI Values |
+# | count_clean | Count of Patient Records with Clean BMI Values |
+# | min_raw | Minimum Raw BMI Value |
+# | mean_raw | Average Raw BMI Value |
+# | max_raw | Maximum Raw BMI Value |
+# | sd_raw | Standard Deviation of Raw BMI Values |
+# | count_raw | Count of All Patient Records |
+# | count_diff | Count of Patient Records with Excluded BMI Values |
+# 
+# The buttons can be used to add or remove columns from the table (all columns are shown by default - clicking a button will remove that column from the table).
 # The checkbox includes "missing" values (note: this will impact the raw columns as missing values may cause BMI values of infinity since they divide by 0 when missing). Missing values are not included by default.
 
 # In[26]:
