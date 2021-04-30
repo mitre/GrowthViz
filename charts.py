@@ -2,15 +2,18 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-# should we add this to pediatrics?
-def weight_distr(df):
-    wgt_grp = df[
-        (df["param"] == "WEIGHTKG")
-        & (df["measurement"] >= 120)
-        & (df["include"] == True)
-    ]
+
+def weight_distr(df, mode):
+    wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
+    if mode == "high":
+        wgt_grp = wgt_grp[wgt_grp["measurement"] >= 135]
+        plt.title("Weights At or Above 135kg")
+    else:
+        wgt_grp = wgt_grp
+        plt.title("All Weights")
     if len(wgt_grp.index) == 0:
-        print("No included observations with weight (kg) >= 120")
+        print("No included observations with weight (kg) >= 135")
+        plt.close()
     else:
         round_col = wgt_grp.apply(
             lambda row: np.around(row.measurement, decimals=0), axis=1
@@ -584,4 +587,3 @@ def cutoff_view(merged_df, subjid, cutoff, wt_df):
     # selected_param_plot.plot(percentile_window.age, percentile_window.P5, color='k')
     # selected_param_plot.plot(percentile_window.age, percentile_window.P95, color='k')
     return selected_param_plot
-

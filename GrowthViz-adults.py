@@ -127,7 +127,7 @@ else:
     print("Data looks good!")
 
 
-# Next, the `processdata.setup_individual_obs_df` function performs transformations on the `cleaned_obs` DataFrame. This will create an `age` column, which is a decimal column that represents the patient's age in years at the time of the observation. It changes the `clean_value` column into a [pandas categorical type](https://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html). It also create an `include` column which contains a boolean value indicating whether growthcleanr states to include (true) or exclude (false) the observation. The resulting DataFrame is assigned to `obs`.
+# Next, the `processdata.setup_individual_obs_df` function performs transformations on the `cleaned_obs` DataFrame. This will create an `age` column, which is a decimal column that represents the patient's age in years at the time of the observation. It changes the `clean_value` column into a [pandas categorical type](https://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html). It also create an `include` column which contains a boolean value indicating whether growthcleanr states to include (true) or exclude (false) the observation. The resulting DataFrame is assigned to `obs_full`.
 
 # In[10]:
 
@@ -141,26 +141,26 @@ obs_full = processdata.setup_individual_obs_df(cleaned_obs, 'adults')
 obs_full.head()
 
 
-# In the following cell, the `processdata.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars. It then removes patients outside the intended target population of this notebook (adults 20 to 65).
+# In the following cell, the `processdata.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily pediatrics, you will want to switch to the pediatrics notebooks. The function then **removes** patients in the excluded categories (below 18 and above 80).
 
-# In[12]:
+# In[37]:
 
 
 obs = processdata.keep_age_range(obs_full, 'adults')
 
 
+# After that, `charts.weight_distr` creates two visualizations. The first shows a distribution of all of the included weights in the dataset. The second shows weights above a certain threshold to see whether there are spikes at a certain *Included* weights that might indicate that a commonly used scale maxes out at a certain value. This chart is restricted to values of 135kg or higher (rounded to the nearest KG) to make patterns in higher weights easier to identify. This potential issue is important to keep in mind when conducting an analysis.
+
 # In[13]:
 
 
-obs.head()
+charts.weight_distr(obs, 'all')
 
-
-# After that, `charts.weight_distr` creates a visualization to see whether there are spikes at a certain *Included* weights that might indicate that a commonly used scale maxes out at a certain value. The chart is restricted to values of 120kg or higher (rounded to the nearest KG) to make patterns in higher weights easier to identify. This potential issue is important to keep in mind when conducting an analysis.
 
 # In[14]:
 
 
-charts.weight_distr(obs)
+charts.weight_distr(obs, 'high')
 
 
 # The following cell loads in the [CDC Anthropometric Reference Data for Adults](https://www.cdc.gov/nchs/data/series/sr_03/sr03-046-508.pdf). Rows, which represent decades (e.g., 20-29), are expanded so that there is one record per year. Standard deviation is calculated from the count of examined persons and the standard error. `Sex` is then transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). Finally, percentiles are smoothed across decade changes (e.g., any change happens gradually from 29 to 31). This data is used to plot percentile bands in visualizations in the tool. 
@@ -289,7 +289,7 @@ widgets.VBox([g, out])
 # In[21]:
 
 
-all_ids = cleaned_obs['subjid'].unique()
+all_ids = obs['subjid'].unique()
 val = 'd88d3987-93ff-0820-286f-754cd971012d' if 'd88d3987-93ff-0820-286f-754cd971012d' in all_ids else np.random.choice(all_ids, size=1, replace=False) # another good id: 25477664
 interactive(charts.overlap_view_adults, obs_df=fixed(obs_wbmi), 
             subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False), 
@@ -368,7 +368,7 @@ charts.five_by_five_view(obs_wbmi, sample, 'HEIGHTCM', wt_percentiles, ht_percen
 # TO DO WHEN WE HAVE MORE EXCLUSION CATEGORIES
 #top_weight_extreme_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-EWMA-Extreme'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
 #ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, size=25, replace=False)
-#charts.five_by_five_view(cleaned_obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles)
+#charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles)
 
 
 # ## Visualizing the Top/Bottom 25 for a Given Category
@@ -378,8 +378,8 @@ charts.five_by_five_view(obs_wbmi, sample, 'HEIGHTCM', wt_percentiles, ht_percen
 # In[29]:
 
 
-def edge25(cleaned_obs, category, group, sort_order, param):
-    filtered_by_cat = cleaned_obs[(cleaned_obs.clean_cat == category) & (cleaned_obs.param == param)]
+def edge25(obs, category, group, sort_order, param):
+    filtered_by_cat = obs[(obs.clean_cat == category) & (obs.param == param)]
     # get list of relevant IDs
     filtered_sum = filtered_by_cat.groupby('subjid', as_index=False).agg(max_measure=('measurement', 'max'), min_measure=('measurement', 'min'), start_age=('age', 'min'), axis_range=('range', 'mean'))
     if group == 'largest':
@@ -387,9 +387,9 @@ def edge25(cleaned_obs, category, group, sort_order, param):
     else:
         filtered_sum = filtered_sum.nsmallest(25, 'min_measure')
     filtered_sum.sort_values(by=[sort_order, 'subjid'], inplace=True)
-    return charts.five_by_five_view(cleaned_obs, filtered_sum.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'dotted')
+    return charts.five_by_five_view(obs, filtered_sum.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'dotted')
     
-interact(edge25, cleaned_obs = fixed(obs_wbmi_mult), category = cleaned_obs.clean_cat.unique(), 
+interact(edge25, obs = fixed(obs_wbmi_mult), category = obs.clean_cat.unique(), 
          group = ['largest', 'smallest'], sort_order = ['max_measure', 'min_measure', 'start_age', 'axis_range'], param = ['WEIGHTKG', 'HEIGHTCM', 'BMI'])
 
 
