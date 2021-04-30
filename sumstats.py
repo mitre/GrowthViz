@@ -3,7 +3,9 @@ from IPython.display import Markdown
 
 
 def setup_percentile_zscore_adults(percentiles_clean):
-    # create mean/sd values to merge to adult data for z-score calculations
+    """
+    Creates mean/sd values to merge to adult data for z-score calculations
+    """
     dta_forz_long = percentiles_clean[["Mean", "Sex", "param", "age", "sd"]]
 
     def label_param(row):
@@ -29,6 +31,9 @@ def setup_percentile_zscore_adults(percentiles_clean):
 
 
 def add_mzscored_to_merged_df_adults(merged_df, pctls):
+    """
+    Merges mean/sd values onto adult data for z-score calculations
+    """
     pct_df = pctls.drop(columns={"age"})
     merged_df = merged_df.merge(pct_df, on=["sex", "rounded_age"], how="left")
     return merged_df
@@ -37,6 +42,9 @@ def add_mzscored_to_merged_df_adults(merged_df, pctls):
 def add_mzscored_to_merged_df_pediatrics(
     merged_df, wt_percentiles, ht_percentiles, bmi_percentiles
 ):
+    """
+    Merges mean/sd values onto pediatrics data for z-score calculations
+    """
     merged_df = calculate_modified_zscore_pediatrics(
         merged_df, wt_percentiles, "weight"
     )
@@ -174,4 +182,3 @@ def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
         "half_of_two_z_scores"
     ]
     return mswpt.drop(columns=["Agemos", "Sex", "M", "half_of_two_z_scores"])
-

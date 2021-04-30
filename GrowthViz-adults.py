@@ -9,7 +9,7 @@
 # 
 # > In pediatrics, evaluation of growth is fundamental, and many pediatric research studies include some aspect of growth as an outcome or other variable. The clinical growth measurements obtained in day-to-day care are susceptible to error beyond the imprecision inherent in any anthropometric measurement. Some errors result from minor problems with measurement technique. While these errors can be important in certain analyses, they are often small and generally impossible to detect after measurements are recorded. Larger measurement technique errors can result in values that are biologically implausible and can cause problems for many analyses. 
 # 
-# The `growthcleanr` package has been expanded to identify implausible height and weight observations among adult subjects, up to age 65. This notebook supports review of `growthcleanr` results when working with data from **adult** subjects. If you are primarily working with pediatric subjects, please use the `GrowthViz-pediatrics.ipynb` notebook instead.
+# The `growthcleanr` package has been expanded to identify implausible height and weight observations among adult subjects, from 18 up to age 65. This notebook supports review of `growthcleanr` results when working with data from **adult** subjects. If you are primarily working with pediatric subjects, please use the `GrowthViz-pediatrics.ipynb` notebook instead.
 # 
 # ## GrowthViz Purpose
 # 
@@ -143,7 +143,7 @@ obs_full.head()
 
 # In the following cell, the `processdata.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily pediatrics, you will want to switch to the pediatrics notebooks. The function then **removes** patients in the excluded categories (below 18 and above 80).
 
-# In[37]:
+# In[12]:
 
 
 obs = processdata.keep_age_range(obs_full, 'adults')
@@ -188,8 +188,8 @@ percentiles_clean.head(15)
 # In[16]:
 
 
-percentiles_long = sumstats.setup_percentile_zscore_adults(percentiles_clean)
-percentiles_long.head()
+percentiles_wide = sumstats.setup_percentile_zscore_adults(percentiles_clean)
+percentiles_wide.head()
 
 
 # In an earlier cell, the tool creates the `obs` DataFrame. In that structure there is one measurement, either height or weight, per row. In this cell, the `processdata.setup_merged_df` function will create a DataFrame where a height observation and weight observation for the same `subjid` on the same `agedays` are combined into a single row. Several new columns are added to the resulting DataFrame:
@@ -225,7 +225,7 @@ obs_wbmi = processdata.setup_bmi_adults(merged_df, obs)
 
 # ## Exclusion Information
 # 
-# The following shows the counts of the values for inclusion/exclusion along with the percentages of 
+# The following shows the counts of the values for inclusion/exclusion along with the percentages of total. 
 
 # In[19]:
 
@@ -240,7 +240,7 @@ processdata.exclusion_information(obs)
 # In[20]:
 
 
-mdf = sumstats.add_mzscored_to_merged_df_adults(merged_df, percentiles_long) 
+mdf = sumstats.add_mzscored_to_merged_df_adults(merged_df, percentiles_wide) 
 mdf['wtz'] = (mdf['weight'] - mdf['Mean_weight'])/mdf['sd_weight']
 mdf['htz'] = (mdf['height'] - mdf['Mean_height'])/mdf['sd_height']
 mdf['BMIz'] = (mdf['bmi'] - mdf['Mean_bmi'])/mdf['sd_bmi']
@@ -319,10 +319,6 @@ charts.overlap_view_adults(obs_df=obs_wbmi, subjid=val, param='HEIGHTCM', includ
             include_percentiles=True, wt_df=wt_percentiles, bmi_df=bmi_percentiles, ht_df=ht_percentiles)
 
 
-# The cell below also creates a plot for an individual modeled after the [CDC paper growth charts](https://www.cdc.gov/growthcharts/data/set1clinical/cj41c021.pdf). It shows both the weight trajectory and height tragectory. The lighter bands in the diagram backgroung represent the 5th through 95th percentile values for age and sex for the given measurement type.
-# 
-# In this chart, the dark blue line represents all weight measurements for an individual and the dark red represents all height measurements for an individual. Any values marked for exclusion are represented with a black x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle. All lines and symbols can be excluded by unchecking the checkboxes above the chart.
-
 # # Visualizing Multiple Trajectories at Once
 # 
 # Next, the tool creates a series that contains the unique set of `subjid`s that have more than one record per category (as determined by `charts.mult_obs`) and stores that in `uniq_ids`.
@@ -334,11 +330,12 @@ obs_wbmi_mult = charts.mult_obs(obs_wbmi)
 uniq_ids = obs_wbmi_mult['subjid'].unique()
 
 
-# From the series of unique ids, the following cell randonly selects 25 individuals and assigns them to `sample`.
+# From the series of unique ids, the following cell randonly selects 25 individuals and assigns them to `sample`. A random seed, which specifies the start point when a computer generates a random number sequence, is then set so that the random sample is reproducible. The random seed can be changed to change the sample generated.
 
 # In[25]:
 
 
+np.random.seed(1)
 sample = np.random.choice(uniq_ids, size=25, replace=False)
 
 
@@ -412,7 +409,21 @@ interact(charts.param_with_percentiles, merged_df = fixed(obs_wbmi),
 # 
 # The next cell generates summary statistics for the data set. The `sumstats.bmi_stats` function uses the `merged_df` DataFrame to compute values on the "clean" data, which means only included values as well as the "raw" values, which is all values for individuals.
 # 
-# The buttons can be used to add or remove columns from the table.
+# | Column Name | Definition |
+# |--------|-------------|
+# | min_clean | Minimum Clean BMI Value |
+# | mean_clean | Average Clean BMI Value |
+# | max_clean | Maximum Clean BMI Value |
+# | sd_clean | Standard Deviation of Clean BMI Values |
+# | count_clean | Count of Patient Records with Clean BMI Values |
+# | min_raw | Minimum Raw BMI Value |
+# | mean_raw | Average Raw BMI Value |
+# | max_raw | Maximum Raw BMI Value |
+# | sd_raw | Standard Deviation of Raw BMI Values |
+# | count_raw | Count of All Patient Records |
+# | count_diff | Count of Patient Records with Excluded BMI Values |
+# 
+# The buttons can be used to add or remove columns from the table (all columns are shown by default - clicking a button will remove that column from the table).
 # The checkbox includes "missing" values (note: this will impact the raw columns as missing values may cause BMI values of infinity since they divide by 0 when missing). Missing values are not included by default.
 
 # In[31]:
@@ -445,7 +456,23 @@ display(ui, out)
 
 # # Exporting Data
 # 
-# The following code allows you to export a DataFrame as a CSV file. When the cell below is run, the drop down will contain all DataFrames stored in variables in this notebook. Select the desired DataFrame and click Generate CSV. This will create the CSV file and provide a link to download it.
+# The following code allows you to export a DataFrame as a CSV file. When the cell below is run, the drop down will contain all DataFrames stored in variables in this notebook. Select the desired DataFrame and click Generate CSV. This will create the CSV file and provide a link to download it. DataFrames created in this notebook include:
+# 
+# | DataFrame | Description |
+# |--------|-------------|
+# | cleaned_obs | Original growthcleanr output read in from csv file |
+# | obs_full | Slightly modified version of `cleaned_obs` in format needed for use in notebook |
+# | obs | Patient observations within age range allowed for this notebook (18-80) |
+# | percentiles | Original CDC percentiles data |
+# | percentiles_clean | Expanded percentiles data with one row per year and standard deviation |
+# | bmi_percentiles | BMI portion of cleaned percentiles data for use in charts |
+# | wt_percentiles | Weight portion of cleaned percentiles data for use in charts |
+# | ht_percentiles | Height portion of cleaned percentiles data for use in charts |
+# | percentiles_wide | Percentiles data reshaped wide with one row per age and sex |
+# | merged_df | Data by subject and age that contains height, weight, and BMI on one row |
+# | obs_wbmi | Version of `obs` that has BMI values appended at end |
+# | mdf | Version of `merged_df` with added z-scores |
+# | obs_wbmi_mult | Version of `obs_wbmi` that only includes subjects with more than one recorded visit |
 
 # In[32]:
 
@@ -501,86 +528,6 @@ get_ipython().run_line_magic('pinfo', 'sumstats.bmi_stats')
 
 
 # In addition, users can take advantage of all of the plotting capabilities of [Matplotlib](https://matplotlib.org/3.1.1/tutorials/index.html) and [Seaborn](https://seaborn.pydata.org/tutorial.html)
-
-# ## Comparing different runs of growthcleanr
-# 
-# This tool contains code to compare different runs of growth cleaner. The following code will load two separate runs of growthcleaner. The first is a data set that includes the data used above, but with additional subjects that have swapped measurements. The second run looks at the same data, but turns on growthcleanr's ability to detect unit errors.
-
-# In[28]:
-
-
-cws = pd.read_csv("sample-data-cleaned.csv")
-cws = processdata.setup_individual_obs_df(cws)
-cwus = pd.read_csv("sample-data-cleaned-with-ue.csv")
-cwus = processdata.setup_individual_obs_df(cwus)
-
-
-# The next cell uses the `prepare_for_comparison` function to combine the two loaded and prepared DataFrames into a single DataFrame that tags the rows with the name of the run.
-
-# In[29]:
-
-
-combined = compare.prepare_for_comparison({'default': cws, 'unit errors': cwus})
-
-
-# With this `combined` DataFrame, several functions are available to display differences between the runs. `category_counts` shows the raw number of measurements for each category. It also shows the difference between the runs and percentage change in the number of raw measurements. This function and other comparison functions can be used with more than two separate runs. In these cases, the functions will not compute difference or percentage change.
-
-# In[30]:
-
-
-compare.count_comparison(combined)
-
-
-# The following cell uses the `subject_comparison_category_counts` to display the count of subjects who have a measurement with at least one of the measurement categories.
-
-# In[31]:
-
-
-compare.subject_comparison_category_counts(combined)
-
-
-# The following cell uses `subject_comparison_percentage` to show a percentage of subjects who have at least one measurement in the category
-
-# In[32]:
-
-
-compare.subject_comparison_percentage(combined)
-
-
-# ## Looking at exclusion prevalence between data sets
-# 
-# The following visualizations show exclusions at age. Each plot shows a single exclusion type with the different runs shown in different colors.
-
-# In[33]:
-
-
-combined['rounded_age'] = np.around(combined.age)
-
-
-# In[34]:
-
-
-count_by_age = combined.groupby(['run_name', 'clean_value', 'rounded_age']).agg({'id': 'count'}).reset_index()
-
-
-# In[35]:
-
-
-p = sns.catplot(x='rounded_age', y='id', col='clean_value', data=count_by_age[count_by_age.clean_value != 'Include'], hue='run_name', col_wrap=3, kind="bar")
-p
-
-
-# In[36]:
-
-
-compare.subject_stats_comparison(combined)
-
-
-# In[ ]:
-
-
-
-
 
 # In[ ]:
 

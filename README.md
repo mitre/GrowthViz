@@ -15,7 +15,7 @@ The objective of this tool is to allow users to conduct post-processing and data
 
 ## Git Repository Information
 
-The latest code for this project should run `GrowthViz.ipynb`.
+The latest code for this project should run `GrowthViz-pediatrics.ipynb` or `GrowthViz-adults.ipynb`, depending on the user's patient population.
 
 The notebook requires Python 3, Jupyter Notebook, Pandas, Matplotlib and Seaborn. Some widgets also require the Qgrid extension enabled in Jupyter. The `.csv` files in the repository are the source data required to run the notebook. Custom data should replace these files in the same format. For more details see [the simple install instructions below.](#simple-install)
 
@@ -60,6 +60,8 @@ Anaconda is an all-in-one package installer for setting up dependencies needed t
 7. Within the browser, navigate to the `GrowthViz-master` folder you downloaded and unzipped in Step 2 (likely found in your Downloads/ folder). Click on `GrowthViz.ipynb` to run the Python notebook.
 8. **[Optional step for testing the notebook]** Once the notebook is open, click the 'Run' button to step through the various blocks (cells) of the document, OR click the 'Cell' dropdown in the menu bar and select 'Run all' to test the entire notebook all at once.
 
+If not using Anaconda, specific versions of packages can be found in requirements.txt.
+
 ## Sample data and first run testing
 
 By default when you reach Step 6 of the [Simple Install](#simple-install) instructions above the notebook will use sample data loaded from the `.csv` files located in the GrowthViz-master project.
@@ -91,6 +93,6 @@ Docker allows for the ability to download GrowthViz and its dependencies in an e
 When you run all cells (see Step 8 above) `Out[#]:` boxes will appear in the notebook below the `In[#]:` code cells. These outputs are the result of the functioning code blocks on the data. The out blocks will often be interactive charts and graphs used to explore the growthcleanr data. Descriptions of each `Out[#]:` block can be found in the text sections above the `In[#]:` blocks.
 
 ## Notice
-Copyright 2020 The MITRE Corporation.
+Copyright 2020-2021 The MITRE Corporation.
 
 Approved for Public Release; Distribution Unlimited. Case Number 19-2008
