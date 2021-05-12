@@ -29,14 +29,15 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install flake8 pytest
+          python3 -m pip install flake8
           python3 -m pip install -r requirements.txt
       - name: Lint with flake8
         run: |
+          # Note: ignore .py versions of notebooks; too many formatting issues
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=GrowthViz-*.py
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=GrowthViz-*.py
       - name: Test with unittest
         run: |
           python3 -m unittest
