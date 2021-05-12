@@ -28,13 +28,14 @@
 # In[1]:
 
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
-import seaborn as sns
 from IPython.display import FileLink, FileLinks
 import qgrid
 
@@ -76,11 +77,11 @@ get_ipython().run_line_magic('config', "InlineBackend.figure_format = 'retina'")
 # In[6]:
 
 
-import processdata
-import sumstats
-import charts
-import compare
-import check_data
+from growthviz import charts
+from growthviz import check_data
+from growthviz import compare
+from growthviz import processdata
+from growthviz import sumstats
 
 
 # This cell reads in a data set that has been run through the [growthcleanr](https://github.com/carriedaymont/growthcleanr) algorithm. Details of the algorithm can be found in [Automated identification of implausible values in growth data from pediatric electronic health records](https://academic.oup.com/jamia/article/24/6/1080/3767271)
@@ -169,7 +170,7 @@ charts.weight_distr(obs, 'high')
 
 
 # adult percentiles
-percentiles = pd.read_csv("vdsmeasures.csv", encoding ='latin1')
+percentiles = pd.read_csv("growthviz-data/ext/vdsmeasures.csv", encoding ='latin1')
 percentiles_clean = processdata.setup_percentiles_adults(percentiles)
 
 # save out smoothed percentiles
@@ -527,9 +528,3 @@ get_ipython().run_line_magic('pinfo', 'sumstats.bmi_stats')
 
 
 # In addition, users can take advantage of all of the plotting capabilities of [Matplotlib](https://matplotlib.org/3.1.1/tutorials/index.html) and [Seaborn](https://seaborn.pydata.org/tutorial.html)
-
-# In[ ]:
-
-
-
-
