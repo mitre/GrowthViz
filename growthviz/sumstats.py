@@ -1,5 +1,5 @@
-import numpy as np
 from IPython.display import Markdown
+import numpy as np
 
 
 def setup_percentile_zscore_adults(percentiles_clean):

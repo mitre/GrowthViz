@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 from IPython.display import FileLinks
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 
 def setup_individual_obs_df(obs_df):
@@ -95,7 +95,7 @@ def setup_percentiles_pediatrics(percentiles_file):
     Processes pediatrics percentiles from CDC
     """
     percentiles = pd.read_csv(
-        percentiles_file,
+        f'growthviz-data/ext/{percentiles_file}',
         dtype={
             "Agemos": float,
             "P5": float,

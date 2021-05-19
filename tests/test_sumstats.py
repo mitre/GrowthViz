@@ -1,12 +1,14 @@
 import unittest
+
 import pandas as pd
-import processdata
-import sumstats
+
+from growthviz import processdata
+from growthviz import sumstats
 
 
 class StatAdultTestCase(unittest.TestCase):
     def setUp(self):
-        self.df = pd.read_csv("vdsmeasures.csv")
+        self.df = pd.read_csv("growthviz-data/ext/vdsmeasures.csv")
 
     def test_setup_percentiles_adults(self):
         setup_df = processdata.setup_percentiles_adults(self.df)

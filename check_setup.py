@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import sys
 
@@ -24,19 +26,23 @@ check_for_file(
 
 # Check for the function library
 check_for_file(
-    "processdata.py", "Unable to find data processing library functions for GrowthViz."
+    "growthviz/charts.py",
+    "Unable to find visualization library functions for GrowthViz.",
 )
 check_for_file(
-    "sumstats.py", "Unable to find summary statistics library functions for GrowthViz."
+    "growthviz/check_data.py",
+    "Unable to find data checks library functions for GrowthViz.",
 )
 check_for_file(
-    "charts.py", "Unable to find visualization library functions for GrowthViz."
+    "growthviz/compare.py", "Unable to find comparison library functions for GrowthViz."
 )
 check_for_file(
-    "compare.py", "Unable to find comparison library functions for GrowthViz."
+    "growthviz/processdata.py",
+    "Unable to find data processing library functions for GrowthViz.",
 )
 check_for_file(
-    "check_data.py", "Unable to find data checks library functions for GrowthViz."
+    "growthviz/sumstats.py",
+    "Unable to find summary statistics library functions for GrowthViz.",
 )
 
 # Check for tests
@@ -51,17 +57,19 @@ check_for_file(
 
 # Check for the CDC growth charts
 check_for_file(
-    "bmiagerev.csv", "Unable to find pediatric CDC growth charts for BMI at age."
+    "growthviz-data/ext/bmiagerev.csv",
+    "Unable to find pediatric CDC growth charts for BMI at age.",
 )
 check_for_file(
-    "statage.csv",
+    "growthviz-data/ext/statage.csv",
     "Unable to find pediatric CDC growth charts for height / stature at age.",
 )
 check_for_file(
-    "wtage.csv", "Unable to find pediatric CDC growth charts for weight at age."
+    "growthviz-data/ext/wtage.csv",
+    "Unable to find pediatric CDC growth charts for weight at age.",
 )
 check_for_file(
-    "vdsmeasures.csv",
+    "growthviz-data/ext/vdsmeasures.csv",
     "Unable to find CDC growth charts for adult weight, height and BMI.",
 )
 

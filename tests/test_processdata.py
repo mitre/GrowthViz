@@ -1,6 +1,8 @@
 import unittest
+
 import pandas as pd
-import processdata
+
+from growthviz import processdata
 
 
 class DataTestCase(unittest.TestCase):
@@ -72,7 +74,7 @@ class DataTestCase(unittest.TestCase):
 
 class PctAdultTestCase(unittest.TestCase):
     def setUp(self):
-        self.df = pd.read_csv("vdsmeasures.csv", encoding="latin1")
+        self.df = pd.read_csv("growthviz-data/ext/vdsmeasures.csv", encoding="latin1")
 
     def test_vdsmeasures_data(self):
         self.assertEqual(0, self.df["Number of examined persons"].isnull().sum())
