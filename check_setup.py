@@ -45,16 +45,6 @@ check_for_file(
     "Unable to find summary statistics library functions for GrowthViz.",
 )
 
-# Check for tests
-check_for_file(
-    "tests/test_processdata.py",
-    "Unable to find unit tests for GrowthViz data processing library functions.",
-)
-check_for_file(
-    "tests/test_sumstats.py",
-    "Unable to find unit tests for GrowthViz summary statistics library functions.",
-)
-
 # Check for the CDC growth charts
 check_for_file(
     "growthviz-data/ext/bmiagerev.csv",
