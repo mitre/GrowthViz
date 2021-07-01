@@ -95,7 +95,7 @@ def setup_percentiles_pediatrics(percentiles_file):
     Processes pediatrics percentiles from CDC
     """
     percentiles = pd.read_csv(
-        f'growthviz-data/ext/{percentiles_file}',
+        f"growthviz-data/ext/{percentiles_file}",
         dtype={
             "Agemos": float,
             "P5": float,
@@ -332,11 +332,9 @@ def export_to_csv(da_locals, selection_widget, out):
     Saves out csv file of dataframe
     """
     df_name = selection_widget.value
-    da_locals[df_name].to_csv(
-        "growthviz-data/output/{}.csv".format(df_name), index=False
-    )
+    da_locals[df_name].to_csv("output/{}.csv".format(df_name), index=False)
     out.clear_output()
-    out.append_display_data(FileLinks("growthviz-data/output"))
+    out.append_display_data(FileLinks("output"))
 
 
 def clean_swapped_values(merged_df):

@@ -251,13 +251,17 @@ widgets.VBox([g, out])
 
 
 all_ids = obs['subjid'].unique()
-val = 47085108 if 47085108 in all_ids else np.random.choice(all_ids, size=1, replace=False)
-interactive(charts.overlap_view_pediatrics, obs_df=fixed(obs), 
+val = 5450 if 5450 in all_ids else np.random.choice(all_ids, size=1, replace=False)
+interactive(charts.overlap_view_pediatrics_show, 
+            obs_df=fixed(obs), 
             subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False), 
             param=['HEIGHTCM', 'WEIGHTKG'], 
             include_carry_forward=widgets.Checkbox(value=True,description='Include Carry Forward',disabled=False,indent=False), 
             include_percentiles=widgets.Checkbox(value=True,description='Include Measurement Percentile Bands',disabled=False,indent=False),
-            wt_df=fixed(wt_percentiles), ht_df=fixed(ht_percentiles), bmi_df=fixed(bmi_percentiles))
+            wt_df=fixed(wt_percentiles), 
+            ht_df=fixed(ht_percentiles), 
+            bmi_df=fixed(bmi_percentiles)
+           )
 
 
 # The cell below also creates a plot for an individual modeled after the [CDC paper growth charts](https://www.cdc.gov/growthcharts/data/set1clinical/cj41c021.pdf). It shows both the weight trajectory and height trajectory. The lighter bands in the diagram background represent the 5th through 95th percentile values for age and sex for the given measurement type.
@@ -268,8 +272,9 @@ interactive(charts.overlap_view_pediatrics, obs_df=fixed(obs),
 
 
 all_ids = obs['subjid'].unique()
-val = 47085108 if 47085108 in all_ids else np.random.choice(all_ids, size=1, replace=False)
-interactive(charts.overlap_view_double_pediatrics, obs_df=fixed(obs), 
+val = 5446 if 5446 in all_ids else np.random.choice(all_ids, size=1, replace=False)
+interactive(charts.overlap_view_double_pediatrics, 
+            obs_df=fixed(obs), 
             subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False),
             show_all_measurements=widgets.Checkbox(value=True,description='Show All Measurements',disabled=False,indent=False),
             show_excluded_values=widgets.Checkbox(value=True,description='Show Excluded Values (x)',disabled=False,indent=False),
@@ -340,7 +345,8 @@ def edge25(obs, category, sort_order, param):
         filtered_by_cat = filtered_by_cat.nlargest(25, 'measurement')
     else:
         filtered_by_cat = filtered_by_cat.nsmallest(25, 'measurement')
-    return charts.five_by_five_view(obs, filtered_by_cat.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
+    fig = charts.five_by_five_view(obs, filtered_by_cat.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
+    plt.show()
     
 interact(edge25, obs = fixed(obs), category = obs.clean_cat.unique(), 
          sort_order = ['largest', 'smallest'], param = ['WEIGHTKG', 'HEIGHTCM'])

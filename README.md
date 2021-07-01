@@ -151,7 +151,10 @@ If not using Anaconda, specific versions of packages can be found in `requiremen
 
 By default when you reach Step 6 of the [Simple Install](#simple-install)
 instructions above the notebook will use sample data loaded from the `.csv`
-files located in the GrowthViz-master project.
+files located in the GrowthViz project. This is the same synthetic sample data
+that is packaged with
+[growthcleanr](https://github.com/carriedaymont/growthcleanr), cleaned and
+then separated into pediatric and adult sets for GrowthViz.
 
 To ensure that all of the necessary example files are present, run the
 `check_setup.py` script.
