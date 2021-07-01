@@ -10,10 +10,9 @@ def weight_distr(df, mode):
     """
     wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
     if mode == "high":
-        wgt_grp = wgt_grp[wgt_grp["measurement"] >= 135]
+        wgt_grp = wgt_grp.loc[wgt_grp["measurement"] >= 135]
         plt.title("Weights At or Above 135kg")
     else:
-        wgt_grp = wgt_grp
         plt.title("All Weights")
     if len(wgt_grp.index) == 0:
         print("No included observations with weight (kg) >= 135")
@@ -26,6 +25,9 @@ def weight_distr(df, mode):
         wgt_grp_sum = wgt_grp.groupby("round_weight")["subjid"].count().reset_index()
         plt.rcParams["figure.figsize"] = [7, 5]
         wgt_grp_sum_plot = plt.bar(wgt_grp_sum["round_weight"], wgt_grp_sum["subjid"])
+        # Assure there is some breadth to the x-axis in case of just a few observations
+        if wgt_grp["measurement"].max() - wgt_grp["measurement"].min() < 10:
+            plt.xlim(wgt_grp["measurement"].min() - 5, wgt_grp["measurement"].max() + 5)
         plt.ylabel("Total Patient Observations")
         plt.xlabel("Recorded Weight (Kg)")
         plt.grid()
@@ -149,6 +151,32 @@ def overlap_view_adults(
     selected_param_plot.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
     plt.title(param)
     return selected_param_plot
+
+
+def overlap_view_adults_show(
+    obs_df,
+    subjid,
+    param,
+    include_carry_forward,
+    include_percentiles,
+    wt_df,
+    bmi_df,
+    ht_df,
+):
+    """
+    Wraps overlap_view_adult with plt.show().
+    """
+    plot = overlap_view_adults(
+        obs_df,
+        subjid,
+        param,
+        include_carry_forward,
+        include_percentiles,
+        wt_df,
+        bmi_df,
+        ht_df,
+    )
+    plt.show()
 
 
 def overlap_view_pediatrics(
