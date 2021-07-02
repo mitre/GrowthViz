@@ -1,21 +1,26 @@
-FROM jupyter/minimal-notebook
+FROM jupyter/scipy-notebook
 
-MAINTAINER rscalfani@mitre.org
+LABEL maintainer="Robi Scalfani <rscalfani@mitre.org>"
 
-WORKDIR /usr/src/app
-
-RUN pip install pandas
-RUN pip install matplotlib
-RUN pip install ipywidgets
-RUN pip install seaborn
-RUN pip install qgrid
-
-COPY . ./
 COPY LICENSE /LICENSE
 COPY README.md /README.md
+
+# Switch to root; minimal-notebook switches away, so we have to switch back
+# https://github.com/jupyter/docker-stacks/blob/master/minimal-notebook/Dockerfile
+USER root
+
+WORKDIR /app
+COPY . /app
+
+RUN pip install -r requirements.txt
+
+RUN chown -R jovyan /app
 
 EXPOSE 8888
 
 RUN jupyter nbextension enable --py --sys-prefix qgrid
+
+# Switch back to regular user
+USER jovyan
 
 CMD jupyter notebook

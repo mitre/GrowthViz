@@ -136,3 +136,13 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# VSCode environment
+.history
+.vscode
+
+# Other local additions
+*.swo
+*.swp
+.DS_Store
+output
