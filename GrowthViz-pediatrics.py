@@ -232,7 +232,7 @@ def handle_selection_change(_event, _widget):
         subjid = sdf.subjid.iloc[0]
         with out:
             charts.overlap_view_pediatrics(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, ht_percentiles)
-            display(plt.show())
+            plt.show()
 g.on('selection_changed', handle_selection_change)    
 widgets.VBox([g, out])
 
@@ -321,14 +321,14 @@ charts.five_by_five_view(obs, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles
 # 
 # This tool can be used to create samples that are tailored to specific interests. Views can easily be created on existing DataFrames and be used to generate different samples. Functionality available is described in the [Pandas DataFrame documentation](https://pandas.pydata.org/pandas-docs/stable/reference/frame.html).
 # 
-# The cell below selects all observations with a weight exclusion of "Exclude-EWMA-Extreme". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer examples than 25, no chart is generated. 
+# The cell below selects all observations with a weight exclusion of "Exclude-EWMA-Extreme". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer than 25 examples, but at least one, each example is shown. 
 
 # In[24]:
 
 
 top_weight_extreme_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-EWMA-Extreme'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
-if len(top_weight_extreme_ewma_ids) >= 25:
-    ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, size=25, replace=False)
+if len(top_weight_extreme_ewma_ids) >= 1:
+    ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, size=len(top_weight_extreme_ewma_ids), replace=False)
     charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
 
 

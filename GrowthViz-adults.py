@@ -271,7 +271,7 @@ def handle_selection_change(_event, _widget):
         subjid = sdf.subjid.iloc[0]
         with out:
             charts.overlap_view_adults(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, bmi_percentiles, ht_percentiles)
-            display(plt.show())
+            plt.show()
 g.on('selection_changed', handle_selection_change)    
 widgets.VBox([g, out])
 
@@ -290,8 +290,8 @@ widgets.VBox([g, out])
 
 
 all_ids = obs['subjid'].unique()
-val = 'd88d3987-93ff-0820-286f-754cd971012d' if 'd88d3987-93ff-0820-286f-754cd971012d' in all_ids else np.random.choice(all_ids, size=1, replace=False) # another good id: 25477664
-interactive(charts.overlap_view_adults, obs_df=fixed(obs_wbmi), 
+val = 2868 if 2868 in all_ids else np.random.choice(all_ids, size=1, replace=False)
+interactive(charts.overlap_view_adults_show, obs_df=fixed(obs_wbmi), 
             subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False), 
             param=['HEIGHTCM', 'WEIGHTKG', 'BMI'], 
             include_carry_forward=widgets.Checkbox(value=True,description='Include Carry Forward',disabled=False,indent=False), 
@@ -302,21 +302,23 @@ interactive(charts.overlap_view_adults, obs_df=fixed(obs_wbmi),
 # In[22]:
 
 
-obs_wbmi[obs_wbmi['subjid'] == 'd88d3987-93ff-0820-286f-754cd971012d'] # b5a84a9d-dd7c-95cb-5fd9-3c581a72c812, 867a461b-7cb8-76aa-9891-42369a9899e8 is an example with the underweight line
+obs_wbmi[obs_wbmi['subjid'] == 2868]
 
 
 # In[23]:
 
 
-# display all charts at the same time
-charts.overlap_view_adults(obs_df=obs_wbmi, subjid=val, param='WEIGHTKG', include_carry_forward=True, 
+@interact(subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False))
+def all_charts(subjid=val):
+    charts.overlap_view_adults(obs_df=obs_wbmi, subjid=subjid, param='WEIGHTKG', include_carry_forward=True, 
             include_percentiles=True, wt_df=wt_percentiles, bmi_df=bmi_percentiles, ht_df=ht_percentiles)
 
-charts.overlap_view_adults(obs_df=obs_wbmi, subjid=val, param='BMI', include_carry_forward=True, 
+    charts.overlap_view_adults(obs_df=obs_wbmi, subjid=subjid, param='BMI', include_carry_forward=True, 
             include_percentiles=True, wt_df=wt_percentiles, bmi_df=bmi_percentiles, ht_df=ht_percentiles)
 
-charts.overlap_view_adults(obs_df=obs_wbmi, subjid=val, param='HEIGHTCM', include_carry_forward=True, 
+    charts.overlap_view_adults(obs_df=obs_wbmi, subjid=subjid, param='HEIGHTCM', include_carry_forward=True, 
             include_percentiles=True, wt_df=wt_percentiles, bmi_df=bmi_percentiles, ht_df=ht_percentiles)
+    plt.show()
 
 
 # # Visualizing Multiple Trajectories at Once
@@ -357,12 +359,12 @@ charts.five_by_five_view(obs_wbmi, sample, 'HEIGHTCM', wt_percentiles, ht_percen
 # 
 # This tool can be used to create samples that are tailored to specific interests. Views can easily be created on existing DataFrames and be used to generate different samples. Functionality available is described in the [Pandas DataFrame documentation](https://pandas.pydata.org/pandas-docs/stable/reference/frame.html).
 # 
-# The cell below selects all observations with a weight exclusion of "Exclude-Moderate-EWMA". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer examples than 25, no chart is generated. 
+# The cell below selects all observations with a weight exclusion of "Exclude-Moderate-EWMA". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer than 25 examples, but at least one, each example is shown. 
 
 # In[28]:
 
 
-top_weight_moderate_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-Moderate-EWMA'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
+top_weight_moderate_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-Adult-EWMA-Moderate'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
 if len(top_weight_moderate_ewma_ids) >= 25:
     ewma_sample = np.random.choice(top_weight_moderate_ewma_ids, size=25, replace=False)
     charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles, bmi_percentiles, 'dotted')
@@ -384,7 +386,8 @@ def edge25(obs, category, group, sort_order, param):
     else:
         filtered_sum = filtered_sum.nsmallest(25, 'min_measure')
     filtered_sum.sort_values(by=[sort_order, 'subjid'], inplace=True)
-    return charts.five_by_five_view(obs, filtered_sum.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'dotted')
+    fig = charts.five_by_five_view(obs, filtered_sum.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'dotted')
+    plt.show()
     
 interact(edge25, obs = fixed(obs_wbmi_mult), category = obs.clean_cat.unique(), 
          group = ['largest', 'smallest'], sort_order = ['max_measure', 'min_measure', 'start_age', 'axis_range'], param = ['WEIGHTKG', 'HEIGHTCM', 'BMI'])
@@ -398,7 +401,7 @@ interact(edge25, obs = fixed(obs_wbmi_mult), category = obs.clean_cat.unique(),
 
 
 all_ids = obs_wbmi['subjid'].unique()
-val = 143216308 if 143216308 in all_ids else np.random.choice(all_ids, size=1, replace=False)
+val = 2431 if 2431 in all_ids else np.random.choice(all_ids, size=1, replace=False)
 interact(charts.param_with_percentiles, merged_df = fixed(obs_wbmi),
          subjid = widgets.Dropdown(options=all_ids, value=val,
                                          description='Subject ID:',disabled=False), 
@@ -493,9 +496,7 @@ display(ui, out)
 
 # # Post Processing Data
 # 
-# This tool provides functions that allow the post processing of data. `processdata.clean_swapped_values` will look in a DataFrame for rows where the `height_cat` and `weight_cat` are set to "Exclude-Swaps-RV". It will then swap the `height` and `weight` values for those rows. It will also create two new columns: `postprocess_height_cat` and `postprocess_weight_cat`. The values for these columns is copied from the original categories except in the case where swaps are fixed when it is set to "Include-Fixed-Swap".
-# 
-# `processdata.clean_unit_errors` will look in a data frame for rows where the `height_cat` and `weight_cat` are set to "Exclude-Unit-Errors". It will divide or multiply the value to convert it to metric.
+# This tool provides functions that allow the post processing of data. `processdata.clean_swapped_values` will look in a DataFrame for rows where the `height_cat` and `weight_cat` are both flagged for exclusions with "`Exclude-Adult-Swapped-Measurements`". It will then swap the `height` and `weight` values for those rows, and recalculate BMI. It will also create two new columns: `postprocess_height_cat` and `postprocess_weight_cat`. The values for these columns is copied from the original categories except in the case where swaps are fixed when it is set to "`Include-Fixed-Swap`".
 # 
 # The cell below copies the merged DataFrame and then cleans the swapped values.
 
@@ -504,27 +505,17 @@ display(ui, out)
 
 cleaned = merged_df.copy()
 cleaned = processdata.clean_swapped_values(cleaned)
-cleaned[cleaned.weight_cat == 'Exclude-Swaps-RV'].head()
-
-
-# The cell below copies the merged DataFrame and then cleans the unit errors. Note: To see results in the table below with the example data you may need to swap "clean_with_swaps.csv" for "clean_with_uswaps.csv" and rerun the cells in the "Loading Data" section above. The default example set has swaps but not unit errors.
-
-# In[34]:
-
-
-cleaned = merged_df.copy()
-cleaned = processdata.clean_unit_errors(cleaned)
-cleaned[cleaned.height_cat == 'Exclude-Unit-Errors'].head()
+cleaned[cleaned.weight_cat == 'Exclude-Adult-Swapped-Measurements'].head()
 
 
 # # Developing New Visualizations
 # 
 # Users may take advantage of the predefined `sumstats.bmi_stats`, `charts.bmi_with_percentiles`, `charts.five_by_five_view`, `charts.overlap_view_adults` and `charts.top_ten` functions. For more information on these functions, execute the function name ending with a "?", which will bring up the inline help window. For example, `charts.five_by_five_view`
 
-# In[35]:
+# In[34]:
 
 
 get_ipython().run_line_magic('pinfo', 'sumstats.bmi_stats')
 
 
-# In addition, users can take advantage of all of the plotting capabilities of [Matplotlib](https://matplotlib.org/3.1.1/tutorials/index.html) and [Seaborn](https://seaborn.pydata.org/tutorial.html)
+# In addition, users can take advantage of all of the plotting capabilities of [Matplotlib](https://matplotlib.org/stable/tutorials/index.html) and [Seaborn](https://seaborn.pydata.org/tutorial.html).
