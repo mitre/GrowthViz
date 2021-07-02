@@ -263,17 +263,17 @@ col_def = {
     'BMIz': { 'width': 30 },
 }
 g = qgrid.show_grid(charts.top_ten(mdf, 'weight'), precision=3, column_options=col_opt, column_definitions=col_def)
-out = widgets.Output()
+ind_out = widgets.Output()
 def handle_selection_change(_event, _widget):
     sdf = g.get_selected_df()
-    out.clear_output()
+    ind_out.clear_output()
     if sdf.shape[0] >= 1:
         subjid = sdf.subjid.iloc[0]
-        with out:
+        with ind_out:
             charts.overlap_view_adults(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, bmi_percentiles, ht_percentiles)
-            plt.show()
+            display(plt.show())
 g.on('selection_changed', handle_selection_change)    
-widgets.VBox([g, out])
+widgets.VBox([g, ind_out])
 
 
 # It can be useful to copy values from the `subjid` column in the results above for use in visualizations in the rest of the tool.
@@ -449,12 +449,12 @@ age_range = widgets.IntRangeSlider(value=[20, 65], min=20, max=65, step=1, descr
 include_missing_values = widgets.Checkbox(value=False,description='Include Missing / Zero Heights and Weights',disabled=False,indent=False)
 hbox = widgets.HBox([min_toggle, mean_toggle, max_toggle, std_toggle, count_toggle, diff_toggle])
 ui = widgets.VBox([age_range, hbox, include_missing_values])
-out = widgets.Output()
+sum_out = widgets.Output()
 widgets.interactive_output(sumstats.bmi_stats, {'merged_df': fixed(merged_df), 'include_min': min_toggle, 
          'include_mean': mean_toggle, 'include_max': max_toggle, 'include_std': std_toggle, 
          'include_mean_diff': diff_toggle, 'include_count': count_toggle,
-         'out': fixed(out), 'age_range': age_range, 'include_missing': include_missing_values})
-display(ui, out)
+         'out': fixed(sum_out), 'age_range': age_range, 'include_missing': include_missing_values})
+display(ui, sum_out)
 
 
 # # Exporting Data
@@ -483,15 +483,15 @@ display(ui, out)
 df_selector = widgets.Dropdown(options=processdata.data_frame_names(locals()), description='Data Frames')
 generate_button = widgets.Button(description='Generate CSV')
 ui = widgets.VBox([df_selector, generate_button])
-out = widgets.Output()
+csv_out = widgets.Output()
 
 l = locals()
 def on_button_clicked(b):
-    processdata.export_to_csv(l, df_selector, out)
+    processdata.export_to_csv(l, df_selector, csv_out)
 
 generate_button.on_click(on_button_clicked)
     
-display(ui, out)
+display(ui, csv_out)
 
 
 # # Post Processing Data
