@@ -10,7 +10,7 @@ def check_patient_data(file):
         warnings_list.append("'sex' contains values outside of 0 and 1")
     if (d["age"] >= 0).all() is False:
         warnings_list.append("age column contains values less than zero")
-    if d["age"].dtype != np.number:
+    if d["age"].dtype != np.int64:
         warnings_list.append("age column is not numeric")
     if d["param"].isin(["WEIGHTKG", "HEIGHTCM"]).all() is False:
         warnings_list.append("'param' contains values other than WEIGHTKG and HEIGHTCM")

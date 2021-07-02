@@ -95,7 +95,7 @@ def setup_percentiles_pediatrics(percentiles_file):
     Processes pediatrics percentiles from CDC
     """
     percentiles = pd.read_csv(
-        f'growthviz-data/ext/{percentiles_file}',
+        f"growthviz-data/ext/{percentiles_file}",
         dtype={
             "Agemos": float,
             "P5": float,
@@ -332,20 +332,19 @@ def export_to_csv(da_locals, selection_widget, out):
     Saves out csv file of dataframe
     """
     df_name = selection_widget.value
-    da_locals[df_name].to_csv(
-        "growthviz-data/output/{}.csv".format(df_name), index=False
-    )
+    da_locals[df_name].to_csv("output/{}.csv".format(df_name), index=False)
     out.clear_output()
-    out.append_display_data(FileLinks("growthviz-data/output"))
+    out.append_display_data(FileLinks("output"))
 
 
 def clean_swapped_values(merged_df):
     """
     This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-    "Swapped-Measurements". It will then swap the height and weight values for those rows.
-    It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
-    The values for these columns is copied from the original categories except in the case where
-    swaps are fixed when it is set to "Include-Fixed-Swap".
+    "Swapped-Measurements" (or the adult equivalent). It will then swap the height and weight values
+    for those rows, and recalculate BMIs based on these changes. It will also create two new columns:
+    postprocess_height_cat and postprocess_weight_cat. The values for these columns are copied from
+    the original categories except in the case where swaps are fixed when it is set to
+    "Include-Fixed-Swap".
 
     Parameters:
     merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
@@ -361,17 +360,23 @@ def clean_swapped_values(merged_df):
     merged_df["postprocess_weight_cat"] = merged_df[
         "postprocess_weight_cat"
     ].cat.add_categories(["Include-Fixed-Swap"])
-    merged_df.loc[
-        merged_df["height_cat"] == "Swapped-Measurements", ["height", "weight"]
-    ] = merged_df.loc[
-        merged_df["height_cat"] == "Swapped-Measurements", ["weight", "height"]
+
+    # Allow for both pediatric and adult exclusion forms
+    exclusions = ["Swapped-Measurements", "Exclude-Adult-Swapped-Measurements"]
+    # Condition: both must be flagged as swaps
+    cond = merged_df["height_cat"].isin(exclusions) & merged_df["weight_cat"].isin(
+        exclusions
+    )
+
+    # Swap height and weight
+    merged_df.loc[cond, ["height", "weight"]] = merged_df.loc[
+        cond, ["weight", "height"]
     ].values
-    merged_df.loc[
-        merged_df["height_cat"] == "Swapped-Measurements", "postprocess_height_cat"
-    ] = "Include-Fixed-Swap"
-    merged_df.loc[
-        merged_df["weight_cat"] == "Swapped-Measurements", "postprocess_weight_cat"
-    ] = "Include-Fixed-Swap"
+
+    # Record that they were swapped
+    merged_df.loc[cond, "postprocess_height_cat"] = "Include-Fixed-Swap"
+    merged_df.loc[cond, "postprocess_weight_cat"] = "Include-Fixed-Swap"
+
     merged_df["bmi"] = merged_df["weight"] / ((merged_df["height"] / 100) ** 2)
     return merged_df
 
@@ -379,10 +384,16 @@ def clean_swapped_values(merged_df):
 def clean_unit_errors(merged_df):
     """
     This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-    "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight values to convert them.
-    It will also create two new columns: postprocess_height_cat and postprocess_weight_cat.
-    The values for these columns are copied from the original categories except in the case where
-    unit errors are fixed when it is set to "Include-UH" or "Include-UL" respectively.
+    "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight
+    values to convert them.  It will also create two new columns: postprocess_height_cat and
+    postprocess_weight_cat.  The values for these columns are copied from the original categories
+    except in the case where unit errors are fixed when it is set to "Include-UH" or "Include-UL"
+    respectively.
+
+    At present, the adult algorithm does not specify high or low unit errors, rather it only flags
+    "Exclude-Adult-Unit-Errors", so this function only works with pediatrics data. If growthcleanr
+    adds high and low designations for adult unit errors, a comparable set of conditions could be
+    added here to accommodate adult data.
 
     Parameters:
     merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns

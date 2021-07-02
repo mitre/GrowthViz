@@ -10,10 +10,9 @@ def weight_distr(df, mode):
     """
     wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
     if mode == "high":
-        wgt_grp = wgt_grp[wgt_grp["measurement"] >= 135]
+        wgt_grp = wgt_grp.loc[wgt_grp["measurement"] >= 135]
         plt.title("Weights At or Above 135kg")
     else:
-        wgt_grp = wgt_grp
         plt.title("All Weights")
     if len(wgt_grp.index) == 0:
         print("No included observations with weight (kg) >= 135")
@@ -26,10 +25,13 @@ def weight_distr(df, mode):
         wgt_grp_sum = wgt_grp.groupby("round_weight")["subjid"].count().reset_index()
         plt.rcParams["figure.figsize"] = [7, 5]
         wgt_grp_sum_plot = plt.bar(wgt_grp_sum["round_weight"], wgt_grp_sum["subjid"])
+        # Assure there is some breadth to the x-axis in case of just a few observations
+        if wgt_grp["measurement"].max() - wgt_grp["measurement"].min() < 10:
+            plt.xlim(wgt_grp["measurement"].min() - 5, wgt_grp["measurement"].max() + 5)
         plt.ylabel("Total Patient Observations")
         plt.xlabel("Recorded Weight (Kg)")
         plt.grid()
-        return wgt_grp_sum_plot
+        plt.show()
 
 
 def overlap_view_adults(
@@ -151,6 +153,32 @@ def overlap_view_adults(
     return selected_param_plot
 
 
+def overlap_view_adults_show(
+    obs_df,
+    subjid,
+    param,
+    include_carry_forward,
+    include_percentiles,
+    wt_df,
+    bmi_df,
+    ht_df,
+):
+    """
+    Wraps overlap_view_adult with plt.show().
+    """
+    plot = overlap_view_adults(
+        obs_df,
+        subjid,
+        param,
+        include_carry_forward,
+        include_percentiles,
+        wt_df,
+        bmi_df,
+        ht_df,
+    )
+    plt.show()
+
+
 def overlap_view_pediatrics(
     obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df
 ):
@@ -213,6 +241,18 @@ def overlap_view_pediatrics(
             percentile_window.age, percentile_window.P95, color="k", zorder=1
         )
     return selected_param_plot
+
+
+def overlap_view_pediatrics_show(
+    obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df
+):
+    """
+    Wraps overlap_view_pediatrics with plt.show().
+    """
+    plot = overlap_view_pediatrics(
+        obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df
+    )
+    plt.show()
 
 
 def overlap_view_double_pediatrics(
@@ -359,7 +399,7 @@ def overlap_view_double_pediatrics(
 
     # Reset figsize to default
     plt.rcParams["figure.figsize"] = [6.4, 4.8]
-    return fig
+    plt.show()
 
 
 def mult_obs(obs):
@@ -375,6 +415,24 @@ def mult_obs(obs):
     return obs[obs["any_ones"] == 0]
 
 
+def five_by_five_shape(n):
+    """
+    Determines shape of five by five view, allowing for fewer than 25 observations.
+
+    Parameters:
+    n: length of subject list to display
+
+    Returns:
+    Dimensions of grid/subplots as (nrows, ncols)
+    """
+    if n // 5 == 0:
+        return (1, n % 5)
+    elif n % 5 > 0:
+        return ((n // 5) + 1, 5)
+    else:
+        return (n // 5, 5)
+
+
 def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
     """
     Creates a small multiples plot showing the growth trend for 25 individuals
@@ -384,17 +442,32 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
     subjids: An list of the ids of the individuals to be plotted
     param: (String) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
     """
-    fig, ax = plt.subplots(5, 5)
-    for y in range(5):
-        for x in range(5):
-            subjid = subjids[x * 5 + y]
+    if len(subjids) == 0:
+        print("No matching subjects found.")
+        return
+    nrows, ncols = five_by_five_shape(len(subjids))
+    fig, ax = plt.subplots(nrows, ncols)
+    for y in range(ncols):
+        for x in range(nrows):
+            try:
+                subjid = subjids[x * 5 + y]
+            except IndexError as ie:
+                # No more subjects to render
+                break
             individual = obs_df[obs_df.subjid == subjid]
             selected_param = individual[individual.param == param]
-            ax[x, y].plot(selected_param.age, selected_param.measurement, marker=".")
+            # Indexing varies by dimensionality, so simplify
+            if nrows > 1:
+                tgt = ax[x, y]
+            elif len(subjids) == 1:
+                tgt = ax
+            else:
+                tgt = ax[y]
+            tgt.plot(selected_param.age, selected_param.measurement, marker=".")
             excluded_selected_param = selected_param[
                 selected_param.clean_value != "Include"
             ]
-            ax[x, y].scatter(
+            tgt.scatter(
                 excluded_selected_param.age,
                 excluded_selected_param.measurement,
                 c="r",
@@ -411,22 +484,23 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
                 & (percentile_df.age >= math.floor(individual.age.min()))
                 & (percentile_df.age <= math.ceil(individual.age.max()))
             ]
-            ax[x, y].plot(
+            tgt.plot(
                 percentile_window.age,
                 percentile_window.P5,
                 color="k",
                 linestyle=linestyle,
                 zorder=1,
             )
-            ax[x, y].plot(
+            tgt.plot(
                 percentile_window.age,
                 percentile_window.P95,
                 color="k",
                 linestyle=linestyle,
                 zorder=1,
             )
-            ax[x, y].set(title=subjid)
-    fig.set_size_inches(20, 12)
+            tgt.set(title=subjid)
+    # Set size dynamically to average out about the same
+    fig.set_size_inches(4 * ncols, 2.4 * nrows)
     return plt.tight_layout()
 
 
@@ -465,7 +539,7 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
 
     ax[1].set(xlabel="age (y)", ylabel="BMI", title="BMI Cleaned")
     ax[1].grid()
-    return plt
+    plt.show()
 
 
 def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
@@ -499,7 +573,7 @@ def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
 
     ax[1].set(xlabel="age (y)", ylabel="", title=(param + " Cleaned"))
     ax[1].grid()
-    return plt
+    plt.show()
 
 
 def top_ten(

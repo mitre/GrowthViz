@@ -224,17 +224,17 @@ col_def = {
     'BMIz': { 'width': 30 },
 }
 g = qgrid.show_grid(charts.top_ten(mdf, 'weight'), precision=3, column_options=col_opt, column_definitions=col_def)
-out = widgets.Output()
+ind_out = widgets.Output()
 def handle_selection_change(_event, _widget):
     sdf = g.get_selected_df()
-    out.clear_output()
+    ind_out.clear_output()
     if sdf.shape[0] >= 1:
         subjid = sdf.subjid.iloc[0]
-        with out:
+        with ind_out:
             charts.overlap_view_pediatrics(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, ht_percentiles)
             display(plt.show())
 g.on('selection_changed', handle_selection_change)    
-widgets.VBox([g, out])
+widgets.VBox([g, ind_out])
 
 
 # It can be useful to copy values from the `subjid` column in the results above for use in visualizations in the rest of the tool.
@@ -251,13 +251,17 @@ widgets.VBox([g, out])
 
 
 all_ids = obs['subjid'].unique()
-val = 47085108 if 47085108 in all_ids else np.random.choice(all_ids, size=1, replace=False)
-interactive(charts.overlap_view_pediatrics, obs_df=fixed(obs), 
+val = 5450 if 5450 in all_ids else np.random.choice(all_ids, size=1, replace=False)
+interactive(charts.overlap_view_pediatrics_show, 
+            obs_df=fixed(obs), 
             subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False), 
             param=['HEIGHTCM', 'WEIGHTKG'], 
             include_carry_forward=widgets.Checkbox(value=True,description='Include Carry Forward',disabled=False,indent=False), 
             include_percentiles=widgets.Checkbox(value=True,description='Include Measurement Percentile Bands',disabled=False,indent=False),
-            wt_df=fixed(wt_percentiles), ht_df=fixed(ht_percentiles), bmi_df=fixed(bmi_percentiles))
+            wt_df=fixed(wt_percentiles), 
+            ht_df=fixed(ht_percentiles), 
+            bmi_df=fixed(bmi_percentiles)
+           )
 
 
 # The cell below also creates a plot for an individual modeled after the [CDC paper growth charts](https://www.cdc.gov/growthcharts/data/set1clinical/cj41c021.pdf). It shows both the weight trajectory and height trajectory. The lighter bands in the diagram background represent the 5th through 95th percentile values for age and sex for the given measurement type.
@@ -268,8 +272,9 @@ interactive(charts.overlap_view_pediatrics, obs_df=fixed(obs),
 
 
 all_ids = obs['subjid'].unique()
-val = 47085108 if 47085108 in all_ids else np.random.choice(all_ids, size=1, replace=False)
-interactive(charts.overlap_view_double_pediatrics, obs_df=fixed(obs), 
+val = 5446 if 5446 in all_ids else np.random.choice(all_ids, size=1, replace=False)
+interactive(charts.overlap_view_double_pediatrics, 
+            obs_df=fixed(obs), 
             subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False),
             show_all_measurements=widgets.Checkbox(value=True,description='Show All Measurements',disabled=False,indent=False),
             show_excluded_values=widgets.Checkbox(value=True,description='Show Excluded Values (x)',disabled=False,indent=False),
@@ -316,14 +321,14 @@ charts.five_by_five_view(obs, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles
 # 
 # This tool can be used to create samples that are tailored to specific interests. Views can easily be created on existing DataFrames and be used to generate different samples. Functionality available is described in the [Pandas DataFrame documentation](https://pandas.pydata.org/pandas-docs/stable/reference/frame.html).
 # 
-# The cell below selects all observations with a weight exclusion of "Exclude-EWMA-Extreme". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer examples than 25, no chart is generated. 
+# The cell below selects all observations with a weight exclusion of "Exclude-EWMA-Extreme". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer than 25 examples, but at least one, each example is shown. 
 
 # In[24]:
 
 
 top_weight_extreme_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-EWMA-Extreme'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
-if len(top_weight_extreme_ewma_ids) >= 25:
-    ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, size=25, replace=False)
+if len(top_weight_extreme_ewma_ids) >= 1:
+    ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, size=len(top_weight_extreme_ewma_ids), replace=False)
     charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
 
 
@@ -340,7 +345,8 @@ def edge25(obs, category, sort_order, param):
         filtered_by_cat = filtered_by_cat.nlargest(25, 'measurement')
     else:
         filtered_by_cat = filtered_by_cat.nsmallest(25, 'measurement')
-    return charts.five_by_five_view(obs, filtered_by_cat.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
+    fig = charts.five_by_five_view(obs, filtered_by_cat.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
+    plt.show()
     
 interact(edge25, obs = fixed(obs), category = obs.clean_cat.unique(), 
          sort_order = ['largest', 'smallest'], param = ['WEIGHTKG', 'HEIGHTCM'])
@@ -406,12 +412,12 @@ age_range = widgets.IntRangeSlider(value=[2, 20], min=2, max=20, step=1, descrip
 include_missing_values = widgets.Checkbox(value=False,description='Include Missing / Zero Heights and Weights',disabled=False,indent=False)
 hbox = widgets.HBox([min_toggle, mean_toggle, max_toggle, std_toggle, count_toggle, diff_toggle])
 ui = widgets.VBox([age_range, hbox, include_missing_values])
-out = widgets.Output()
+sum_out = widgets.Output()
 widgets.interactive_output(sumstats.bmi_stats, {'merged_df': fixed(merged_df), 'include_min': min_toggle, 
          'include_mean': mean_toggle, 'include_max': max_toggle, 'include_std': std_toggle, 
          'include_mean_diff': diff_toggle, 'include_count': count_toggle,
-         'out': fixed(out), 'age_range': age_range, 'include_missing': include_missing_values})
-display(ui, out)
+         'out': fixed(sum_out), 'age_range': age_range, 'include_missing': include_missing_values})
+display(ui, sum_out)
 
 
 # # Exporting Data
@@ -435,15 +441,15 @@ display(ui, out)
 df_selector = widgets.Dropdown(options=processdata.data_frame_names(locals()), description='Data Frames')
 generate_button = widgets.Button(description='Generate CSV')
 ui = widgets.VBox([df_selector, generate_button])
-out = widgets.Output()
+csv_out = widgets.Output()
 
 l = locals()
 def on_button_clicked(b):
-    processdata.export_to_csv(l, df_selector, out)
+    processdata.export_to_csv(l, df_selector, csv_out)
 
 generate_button.on_click(on_button_clicked)
     
-display(ui, out)
+display(ui, csv_out)
 
 
 # # Post Processing Data
