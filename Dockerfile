@@ -16,11 +16,11 @@ RUN pip install -r requirements.txt
 
 RUN chown -R jovyan /app
 
-EXPOSE 8888
+EXPOSE 8080
 
 RUN jupyter nbextension enable --py --sys-prefix qgrid
 
 # Switch back to regular user
 USER jovyan
 
-CMD jupyter notebook
+CMD jupyter notebook --port=8080
