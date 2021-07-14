@@ -23,5 +23,6 @@ RUN jupyter nbextension enable --py --sys-prefix qgrid
 
 # Switch back to regular user
 USER jovyan
+ENV HOME /app
 
 CMD jupyter notebook --port=8080
