@@ -19,6 +19,9 @@ RUN chown -R jovyan /app
 RUN mkdir /app/.local
 RUN chmod -R guo+rwx /app
 
+RUN mkdir -p /home/jovyan/.cache/matplotlib
+RUN chmor -R guo+rwx /home/jovyan
+
 EXPOSE 8080
 
 # Switch back to regular user
