@@ -17,10 +17,12 @@ RUN python check_setup.py
 
 RUN chown -R jovyan /app
 RUN mkdir /app/.local
-RUN chmod -R guo+rwx /app
+RUN chmod -R ugo+rwx /app
 
 RUN mkdir -p /home/jovyan/.cache/matplotlib
-RUN chmod -R guo+rwx /home/jovyan
+RUN chmod -R ugo+rwx /home/jovyan
+RUN chmod -R ugo+rwx /home/jovyan/.cache
+RUN chmod -R ugo+rwx /home/jovyan/.cache/matplotlib
 
 EXPOSE 8080
 
