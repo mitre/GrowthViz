@@ -20,7 +20,7 @@ RUN mkdir /app/.local
 RUN chmod -R guo+rwx /app
 
 RUN mkdir -p /home/jovyan/.cache/matplotlib
-RUN chmor -R guo+rwx /home/jovyan
+RUN chmod -R guo+rwx /home/jovyan
 
 EXPOSE 8080
 
