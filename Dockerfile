@@ -16,6 +16,7 @@ RUN pip install -r requirements.txt
 RUN python check_setup.py
 
 RUN chown -R jovyan /app
+RUN mkdir /app/.local
 RUN chmod -R guo+rwx /app
 
 EXPOSE 8080
