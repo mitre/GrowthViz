@@ -16,13 +16,13 @@ RUN pip install -r requirements.txt
 RUN python check_setup.py
 
 RUN chown -R jovyan /app
+RUN chmod -R guo+rwx /app
 
 EXPOSE 8080
-
-RUN jupyter nbextension enable --py --sys-prefix qgrid
 
 # Switch back to regular user
 USER jovyan
 ENV HOME /app
+RUN jupyter nbextension enable --py --sys-prefix qgrid
 
 CMD jupyter notebook --port=8080
