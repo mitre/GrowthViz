@@ -31,4 +31,4 @@ USER jovyan
 ENV HOME /app
 RUN jupyter nbextension enable --py --sys-prefix qgrid
 
-CMD jupyter notebook --port=8080
+CMD jupyter notebook --port=8080 --ip='*' --NotebookApp.token='' --NotebookApp.password=''
