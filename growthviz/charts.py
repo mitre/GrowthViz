@@ -42,38 +42,38 @@ def make_age_charts(df, mode):
     def label_excl_grp(row):
         if mode == "adults":
             if row["age"] < 18:
-                return "  Below 18 (Exclude)"
+                return "Below 18 (Exclude)"
             if (row["age"] >= 18) & (row["age"] < 30):
-                return " 18 to < 30"
+                return "18 to < 30"
             if (row["age"] >= 30) & (row["age"] < 40):
-                return " 30 to < 40"
+                return "30 to < 40"
             if (row["age"] >= 40) & (row["age"] < 50):
-                return " 40 to < 50"
+                return "40 to < 50"
             if (row["age"] >= 50) & (row["age"] < 60):
-                return " 50 to < 60"
+                return "50 to < 60"
             if (row["age"] >= 60) & (row["age"] <= 65):
-                return " 60 to 65"
+                return "60 to 65"
             if (row["age"] > 65) & (row["age"] <= 80):
-                return " > 65 to 80 (Not Recommended)"
+                return "> 65 to 80 (Not Recommended)"
             if row["age"] > 80:
                 return "Above 80 (Exclude)"
         elif mode == "pediatrics":
             if row["age"] < 2:
-                return "  Below 2 (Exclude)"
+                return "00 to 02"
             if (row["age"] >= 2) & (row["age"] < 5):
-                return " 02 to < 05"
+                return "02 to < 05"
             if (row["age"] >= 5) & (row["age"] < 8):
-                return " 05 to < 08"
+                return "05 to < 08"
             if (row["age"] >= 8) & (row["age"] < 11):
-                return " 08 to < 11"
+                return "08 to < 11"
             if (row["age"] >= 11) & (row["age"] < 14):
-                return " 11 to < 14"
+                return "11 to < 14"
             if (row["age"] >= 14) & (row["age"] < 17):
-                return " 14 to < 17"
+                return "14 to < 17"
             if (row["age"] >= 17) & (row["age"] <= 20):
-                return " 17 to 20"
+                return "17 to 20"
             if (row["age"] > 20) & (row["age"] <= 25):
-                return " > 20 to 25 (Not Recommended)"
+                return "> 20 to 25 (Not Recommended)"
             if row["age"] > 25:
                 return "Above 25 (Exclude)"
 
