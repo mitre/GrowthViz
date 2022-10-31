@@ -34,84 +34,89 @@ def weight_distr(df, mode):
         plt.show()
         
 def make_age_charts(df, mode):
-    """
-    Restricts patient data to acceptable age range for notebooks
-    """
+    
     obs_grp = df
-    # create age buckets for chart
-    def label_excl_grp(row):
-        if mode == "adults":
-            if row["age"] < 18:
-                return "Below 18 (Exclude)"
-            if (row["age"] >= 18) & (row["age"] < 30):
-                return "18 to < 30"
-            if (row["age"] >= 30) & (row["age"] < 40):
-                return "30 to < 40"
-            if (row["age"] >= 40) & (row["age"] < 50):
-                return "40 to < 50"
-            if (row["age"] >= 50) & (row["age"] < 60):
-                return "50 to < 60"
-            if (row["age"] >= 60) & (row["age"] <= 65):
-                return "60 to 65"
-            if (row["age"] > 65) & (row["age"] <= 80):
-                return "> 65 to 80 (Not Recommended)"
-            if row["age"] > 80:
-                return "Above 80 (Exclude)"
-        elif mode == "pediatrics":
-            if row["age"] < 2:
-                return "00 to 02"
-            if (row["age"] >= 2) & (row["age"] < 5):
-                return "02 to < 05"
-            if (row["age"] >= 5) & (row["age"] < 8):
-                return "05 to < 08"
-            if (row["age"] >= 8) & (row["age"] < 11):
-                return "08 to < 11"
-            if (row["age"] >= 11) & (row["age"] < 14):
-                return "11 to < 14"
-            if (row["age"] >= 14) & (row["age"] < 17):
-                return "14 to < 17"
-            if (row["age"] >= 17) & (row["age"] <= 20):
-                return "17 to 20"
-            if (row["age"] > 20) & (row["age"] <= 25):
-                return "> 20 to 25 (Not Recommended)"
-            if row["age"] > 25:
-                return "Above 25 (Exclude)"
-
-    label_excl_col = obs_grp.apply(lambda row: label_excl_grp(row), axis=1)
-    obs_grp = obs_grp.assign(cat=label_excl_col.values)
+    # Create reference frames for adults and pediatrics
+    label_frame = pd.DataFrame({})
+   
+    if mode == "adults":
+        label_frame = pd.DataFrame({
+            "min": np.array([0, 18, 30, 40, 50, 60, 65, 80]),
+            "max": np.array([18, 30, 40, 50, 60, 65, 80, 150]),
+            "label": pd.Categorical(["<18", "18-30", "30-40", "40-50", "50-60", "60-65",
+                                "65-80", "80-"]),
+            "sort_order": pd.Series(["A", "B", "C", "D", "E", "F", "G", "H"], dtype="string"),
+            "color": pd.Series(["C3", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"),
+            "symbol": pd.Series(["x", "", "", "", "", "", "/", "x"], dtype="string"),
+        })
+        
+    elif mode == "pediatrics":
+        label_frame = pd.DataFrame({
+            "min": np.array([0, 2, 5, 8, 11, 14, 17, 20, 25]),
+            "max": np.array([2, 5, 8, 11, 14, 17, 20, 25, 150]),
+            "label": pd.Categorical(["0-2", "2-5", "5-8", "8-11", "11-14", "14-17",
+                                   "17-20", "20-25", "25-"]),
+            "sort_order": pd.Series(["A", "B", "C", "D", "E", "F", "G", "H", "I"], dtype="string"),
+            "color": pd.Series(["C0", "C0", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"),
+            "symbol": pd.Series(["", "", "", "", "", "", "", "/", "x"], dtype="string"),
+        })
+    
+    # New Categorizing function which adds label, color, pattern and sort order columns to the dataframe
+    # Adds these categories based on the age of each row in the dataframe
+    def add_categories_to_frame(df_data, df_reference):
+        categories = []
+        colors = []
+        patterns = []
+        sort_order = []
+        for j in range(len(df_data)):
+            for i in range(len(df_reference)):
+                minVal = df_reference['min'][i]
+                maxVal = df_reference['max'][i]
+                if df_data['age'][j] >= minVal and df_data['age'][j] < maxVal:
+                    categories.append(df_reference['label'][i])
+                    colors.append(df_reference['color'][i])
+                    patterns.append(df_reference['symbol'][i])
+                    sort_order.append(df_reference['sort_order'][i])
+        df_data['category'] = categories  
+        df_data['colors'] = colors  
+        df_data['patterns'] = patterns
+        df_data['sort_order'] = sort_order
+        return df_data
+    
+    # Call the categorizing function on the data
+    obs_grp = add_categories_to_frame(obs_grp, label_frame)
+    
+    # Groups the new dataframe by category, sort order, colors and patterns. It then counts the number of subject ids 
+    # in each group and sorts the values by sort order. 
     obs_grp = (
-        obs_grp.groupby("cat")["subjid"]
+        obs_grp.groupby(["category", "sort_order", "colors", "patterns"])["subjid"]
         .count()
         .reset_index()
-        .sort_values("cat", ascending=True)
+        .sort_values(by=['sort_order'])
     )
-    # assign bar colors
-    cat_list = obs_grp["cat"].values.tolist()
-    color_list = []
-    patterns = []
-    for n in cat_list:
-        if ("Below" in n) | ("Above" in n):
-            color_list = color_list + ["C3"]
-            patterns = patterns + ["x"]
-        if ("to" in n) & ("Not" not in n):
-            color_list = color_list + ["C0"]
-            patterns = patterns + [""]
-        if "Not" in n:
-            color_list = color_list + ["orange"]
-            patterns = patterns + ["/"]
+    
     # create chart
     fig, ax1 = plt.subplots()
     obs_grp_plot = plt.bar(
-        obs_grp["cat"],
+        obs_grp["category"],
         obs_grp["subjid"],
-        color=color_list,
+        color=obs_grp["colors"],
     )
-    for bar, pattern in zip(obs_grp_plot, patterns):
+    
+    # Sets the pattern for each bar in the graph. 
+    for bar, pattern in zip(obs_grp_plot, obs_grp["patterns"]):
         bar.set_hatch(pattern)
     plt.xticks(rotation=45, ha="right")
     ax1.get_yaxis().set_major_formatter(
         mpl.ticker.FuncFormatter(lambda x, p: format(int(x), ","))
     )
+    
+    plt.ylabel("Number of Subjects")
+    plt.xlabel("Age Ranges")
+    if mode == "pediatrics":
+        plt.title("Age Chart for Pediatrics")
+    elif mode == "adults":
+        plt.title("Age Chart for Adults")
     
 
 def overlap_view_adults(
