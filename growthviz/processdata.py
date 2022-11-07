@@ -118,9 +118,9 @@ def setup_percentiles_pediatrics(percentiles_file):
 def keep_age_range(df, mode):
     # return specified age range
     if mode == "adults":
-        return df[df["age"].between(18, 80, inclusive=True)]
+        return df[df["age"].between(18, 80, inclusive="both")]
     elif mode == "pediatrics":
-        return df[df["age"].between(0, 30, inclusive=True)]
+        return df[df["age"].between(0, 30, inclusive="both")]
 
 
 def setup_merged_df(obs_df):

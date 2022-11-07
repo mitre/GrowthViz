@@ -25,7 +25,7 @@
 # 
 # Jupyter Notebooks have documentation cells, such as this one, and code cells like the one below. The notebook server runs the code and provides results (if applicable) back in the notebook. The following code cell loads the libraries necessary for the tool to work. If you would like to incorporate other Python libraries to assist in data exploration, they can be added here. Removing libraries from this cell will very likely break the tool.
 
-# In[1]:
+# In[ ]:
 
 
 import matplotlib.pyplot as plt
@@ -41,13 +41,13 @@ import qgrid
 
 # The next two code cells tell the notebook server to automatically reload the externally defined Python functions created to assist in data analysis.
 
-# In[2]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
 
 
-# In[3]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('autoreload', '2')
@@ -55,7 +55,7 @@ get_ipython().run_line_magic('autoreload', '2')
 
 # This code cell instructs the notebook to automatically display plots inline.
 
-# In[4]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -63,7 +63,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 
 # This code cell tells the notebook to output plots for high DPI displays, such as 4K monitors, many smartphones or a retina display on Apple hardware. This cell does not need to be run and can be safely removed. If removed, charts will look more "blocky" or "pixelated" on high DPI displays.
 
-# In[5]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('config', "InlineBackend.figure_format = 'retina'")
@@ -73,7 +73,7 @@ get_ipython().run_line_magic('config', "InlineBackend.figure_format = 'retina'")
 # 
 # The following cell imports functions created for the tool to assist in data analysis. Some of the functions generate charts used in this tool. The chart code may be modified to change the appearance of plots without too much risk of breaking things. Other functions transform DataFrames and changing those will very likely cause things to break. If you are unable to tell the difference in the functions by looking at the code, it is probably best to leave them unmodified.
 
-# In[6]:
+# In[ ]:
 
 
 from growthviz import charts
@@ -100,7 +100,7 @@ from growthviz import sumstats
 # 
 # This information will be loaded into a [pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html) called `cleaned_obs`
 
-# In[7]:
+# In[ ]:
 
 
 cleaned_obs = pd.read_csv("growthviz-data/sample-pediatrics-data.csv")
@@ -108,15 +108,15 @@ cleaned_obs = pd.read_csv("growthviz-data/sample-pediatrics-data.csv")
 
 # The following cell shows what the first five rows look like in the CSV file
 
-# In[8]:
+# In[ ]:
 
 
 cleaned_obs.head()
 
 
-# This next cell runs through a series of data checks on the original data file, such as making sure all values of `sex` are either 0 or 1, or no age values are negative.
+# # This next cell runs through a series of data checks on the original data file, such as making sure all values of `sex` are either 0 or 1, or no age values are negative.
 
-# In[9]:
+# In[ ]:
 
 
 warnings = check_data.check_patient_data("growthviz-data/sample-pediatrics-data.csv")
@@ -129,15 +129,25 @@ else:
 
 # Next, the `processdata.setup_individual_obs_df` function performs transformations on the `cleaned_obs` DataFrame. This will create an `age` column, which is a decimal column that represents the patient's age in years at the time of the observation. It changes the `clean_value` column into a [pandas categorical type](https://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html). It also create an `include` column which contains a boolean value indicating whether growthcleanr states to include (true) or exclude (false) the observation. The resulting DataFrame is assigned to `obs_full`.
 
-# In[10]:
+# In[ ]:
 
 
 obs_full = processdata.setup_individual_obs_df(cleaned_obs)
 
 
-# In the following cell, the `processdata.keep_age_range` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily adults, you will want to switch to the adults notebooks. The function then **removes** patients in the excluded categories (below 2 and above 25).
+# In the following cell, the `charts.make_age_charts` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily adults, you will want to switch to the adults notebooks. The function then **removes** patients in the excluded categories (below 2 and above 25).
 
-# In[11]:
+# In[ ]:
+
+
+charts.make_age_charts(obs_full, 'pediatrics')
+
+
+# The chart above shows pediatric age ranges supported by the rest of this notebook, any observations that fall outside of those ranges.
+# 
+# Now, we will filter the age ranges to match the supported pediatric ranges.
+
+# In[ ]:
 
 
 obs = processdata.keep_age_range(obs_full, 'pediatrics')
@@ -145,13 +155,13 @@ obs = processdata.keep_age_range(obs_full, 'pediatrics')
 
 # After that, `charts.weight_distr` creates two visualizations. The first shows a distribution of all of the included weights in the dataset. The second shows weights above a certain threshold to see whether there are spikes at a certain *Included* weights that might indicate that a commonly used scale maxes out at a certain value. This chart is restricted to values of 135kg or higher (rounded to the nearest KG) to make patterns in higher weights easier to identify. This potential issue is important to keep in mind when conducting an analysis.
 
-# In[12]:
+# In[ ]:
 
 
 charts.weight_distr(obs, 'all')
 
 
-# In[13]:
+# In[ ]:
 
 
 charts.weight_distr(obs, 'high')
@@ -159,7 +169,7 @@ charts.weight_distr(obs, 'high')
 
 # The following cell loads in the [CDC Growth Chart Percentile Data Files](https://www.cdc.gov/growthcharts/percentile_data_files.htm). Functions coerce some values into numeric types. It also add an `age` column which is a decimal value representing age in years. Finally, `Sex` is transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). This data is used to plot percentile bands in visualizations in the tool. 
 
-# In[14]:
+# In[ ]:
 
 
 bmi_percentiles = processdata.setup_percentiles_pediatrics("bmiagerev.csv")
@@ -182,7 +192,7 @@ ht_percentiles = processdata.setup_percentiles_pediatrics("statage.csv")
 # 
 # The result is stored in `merged_df`.
 
-# In[15]:
+# In[ ]:
 
 
 merged_df = processdata.setup_merged_df(obs)
@@ -193,7 +203,7 @@ merged_df.head()
 # 
 # The following shows the counts of the values for inclusion/exclusion along with the percentages of total.
 
-# In[16]:
+# In[ ]:
 
 
 processdata.exclusion_information(obs)
@@ -203,7 +213,7 @@ processdata.exclusion_information(obs)
 # 
 # This next cell creates interactive tool can be used to explore patients. The `sumstats.add_mzscored_to_merged_df` function will add modified Z Scores for height, weight and BMI to `merged_df`. The tool uses [Qgrid](https://github.com/quantopian/qgrid) to create the interactive table. Clicking on a row will create a plot for the individual below the table.
 
-# In[17]:
+# In[ ]:
 
 
 mdf = sumstats.add_mzscored_to_merged_df_pediatrics(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles)
@@ -247,7 +257,7 @@ widgets.VBox([g, ind_out])
 # 
 # In this chart, the blue line represents all measurements for an individual. Any values marked for exclusion are represented with a red x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle, unless `include_carry_forward` is set to False, when they will also be represented as a red x.
 
-# In[18]:
+# In[ ]:
 
 
 all_ids = obs['subjid'].unique()
@@ -268,7 +278,7 @@ interactive(charts.overlap_view_pediatrics_show,
 # 
 # In this chart, the dark blue line represents all weight measurements for an individual and the dark red represents all height measurements for an individual. Any values marked for exclusion are represented with a black x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle. All lines and symbols can be excluded by unchecking the checkboxes above the chart.
 
-# In[19]:
+# In[ ]:
 
 
 all_ids = obs['subjid'].unique()
@@ -288,7 +298,7 @@ interactive(charts.overlap_view_double_pediatrics,
 # 
 # Next, the tool creates a series that contains the unique set of `subjid`s and stores that in `uniq_ids`.
 
-# In[20]:
+# In[ ]:
 
 
 uniq_ids = obs['subjid'].unique()
@@ -296,14 +306,14 @@ uniq_ids = obs['subjid'].unique()
 
 # From the series of unique subjids, the following cell randomly selects 25 individuals and assigns them to `sample`. A random seed, which specifies the start point when a computer generates a random number sequence, is then set so that the random sample is reproducible. The random seed can be changed to change the sample generated.
 
-# In[21]:
+# In[ ]:
 
 
 np.random.seed(1)
 sample = np.random.choice(uniq_ids, size=25, replace=False)
 
 
-# In[22]:
+# In[ ]:
 
 
 sample
@@ -311,7 +321,7 @@ sample
 
 # The `sample` can be passed into the `charts.five_by_five_view` function which will create a [small multiple](https://en.wikipedia.org/wiki/Small_multiple) plot for each of the individuals. Exclusions, including carry forwards, will be represented by a red x.
 
-# In[23]:
+# In[ ]:
 
 
 charts.five_by_five_view(obs, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
@@ -323,7 +333,7 @@ charts.five_by_five_view(obs, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles
 # 
 # The cell below selects all observations with a weight exclusion of "Exclude-EWMA-Extreme". It then sorts by weight in descending order. The code then takes the top 50 values and selects 25 random, unique `subjids` from that set. Finally it plots the results. If there are fewer than 25 examples, but at least one, each example is shown. 
 
-# In[24]:
+# In[ ]:
 
 
 top_weight_extreme_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-EWMA-Extreme'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
@@ -336,7 +346,7 @@ if len(top_weight_extreme_ewma_ids) >= 1:
 # 
 # The following cell uses the same function as above to create a 5 x 5 set of small multiple charts, but selects the top/bottom 25 individuals by growthcleanr category.
 
-# In[25]:
+# In[ ]:
 
 
 def edge25(obs, category, sort_order, param):
@@ -356,7 +366,7 @@ interact(edge25, obs = fixed(obs), category = obs.clean_cat.unique(),
 # 
 # The `charts.bmi_with_percentiles` function displays a chart showing BMI for an individual over time. Black bands representing the 5th and 95th BMI percentile for age and sex are shown with the individual's BMI shown in blue. The plot on the left represents all values. The plot on the right is only included values.
 
-# In[26]:
+# In[ ]:
 
 
 all_ids = obs['subjid'].unique()
@@ -392,7 +402,7 @@ interact(charts.bmi_with_percentiles, merged_df = fixed(merged_df),
 # The buttons can be used to add or remove columns from the table (all columns are shown by default - clicking a button will remove that column from the table).
 # The checkbox includes "missing" values (note: this will impact the raw columns as missing values may cause BMI values of infinity since they divide by 0 when missing). Missing values are not included by default.
 
-# In[27]:
+# In[ ]:
 
 
 min_toggle = widgets.ToggleButton(value=True, description='Minimum BMI', 
@@ -407,7 +417,7 @@ count_toggle = widgets.ToggleButton(value=True, description='Count',
                                     tooltip="Click to hide or show the count columns")
 diff_toggle = widgets.ToggleButton(value=True, description='Count Difference',
                                    tooltip="Click to hide or show the count difference column")
-age_range = widgets.IntRangeSlider(value=[2, 20], min=2, max=20, step=1, description='Age:', continuous_update=False,
+age_range = widgets.IntRangeSlider(value=[0, 20], min=0, max=20, step=1, description='Age:', continuous_update=False,
                                    orientation='horizontal', readout=True, readout_format='d')
 include_missing_values = widgets.Checkbox(value=False,description='Include Missing / Zero Heights and Weights',disabled=False,indent=False)
 hbox = widgets.HBox([min_toggle, mean_toggle, max_toggle, std_toggle, count_toggle, diff_toggle])
@@ -435,7 +445,7 @@ display(ui, sum_out)
 # | merged_df | Data by subject and age that contains height, weight, and BMI on one row |
 # | mdf | Version of `merged_df` with added z-scores |
 
-# In[28]:
+# In[ ]:
 
 
 df_selector = widgets.Dropdown(options=processdata.data_frame_names(locals()), description='Data Frames')
@@ -460,7 +470,7 @@ display(ui, csv_out)
 # 
 # The cell below copies the merged DataFrame and then cleans the swapped values.
 
-# In[29]:
+# In[ ]:
 
 
 cleaned = merged_df.copy()
@@ -470,7 +480,7 @@ cleaned[cleaned.height_cat == 'Swapped-Measurements'].head()
 
 # The cell below copies the merged DataFrame and then cleans the unit errors. Note: To see results in the table below with the example data you may need to swap "clean_with_swaps.csv" for "clean_with_uswaps.csv" and rerun the cells in the "Loading Data" section above. The default example set has swaps but not unit errors.
 
-# In[30]:
+# In[ ]:
 
 
 cleaned = merged_df.copy()
@@ -482,7 +492,7 @@ cleaned[cleaned.height_cat == 'Unit-Error-High'].head()
 # 
 # Users may take advantage of the predefined `sumstats.bmi_stats`, `charts.bmi_with_percentiles`, `charts.five_by_five_view`, `charts.overlap_view_pediatrics` and `charts.top_ten` functions. For more information on these functions, execute the function name ending with a "?", which will bring up the inline help window. For example, `charts.five_by_five_view`
 
-# In[31]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('pinfo', 'sumstats.bmi_stats')
@@ -494,7 +504,7 @@ get_ipython().run_line_magic('pinfo', 'sumstats.bmi_stats')
 # 
 # This tool contains code to compare different runs of growthcleanr. The following code will load two separate runs of growthcleanr. The first is a data set that includes the data used above, but with additional subjects that have swapped measurements. The second run looks at the same data, but turns on growthcleanr's ability to detect unit errors.
 
-# In[32]:
+# In[ ]:
 
 
 cws = pd.read_csv("growthviz-data/sample-data-cleaned.csv")
@@ -505,7 +515,7 @@ cwus = processdata.setup_individual_obs_df(cwus)
 
 # The next cell uses the `prepare_for_comparison` function to combine the two loaded and prepared DataFrames into a single DataFrame that tags the rows with the name of the run.
 
-# In[33]:
+# In[ ]:
 
 
 combined = compare.prepare_for_comparison({'default': cws, 'unit errors': cwus})
@@ -513,7 +523,7 @@ combined = compare.prepare_for_comparison({'default': cws, 'unit errors': cwus})
 
 # With this `combined` DataFrame, several functions are available to display differences between the runs. `category_counts` shows the raw number of measurements for each category. It also shows the difference between the runs and percentage change in the number of raw measurements. This function and other comparison functions can be used with more than two separate runs. In these cases, the functions will not compute difference or percentage change.
 
-# In[34]:
+# In[ ]:
 
 
 compare.count_comparison(combined)
@@ -521,7 +531,7 @@ compare.count_comparison(combined)
 
 # The following cell uses the `subject_comparison_category_counts` to display the count of subjects who have a measurement with at least one of the measurement categories.
 
-# In[35]:
+# In[ ]:
 
 
 compare.subject_comparison_category_counts(combined)
@@ -529,7 +539,7 @@ compare.subject_comparison_category_counts(combined)
 
 # The following cell uses `subject_comparison_percentage` to show a percentage of subjects who have at least one measurement in the category
 
-# In[36]:
+# In[ ]:
 
 
 compare.subject_comparison_percentage(combined)
@@ -539,26 +549,26 @@ compare.subject_comparison_percentage(combined)
 # 
 # The following visualizations show exclusions at age. Each plot shows a single exclusion type with the different runs shown in different colors.
 
-# In[37]:
+# In[ ]:
 
 
 combined['rounded_age'] = np.around(combined.age)
 
 
-# In[38]:
+# In[ ]:
 
 
 count_by_age = combined.groupby(['run_name', 'clean_value', 'rounded_age']).agg({'id': 'count'}).reset_index()
 
 
-# In[39]:
+# In[ ]:
 
 
 p = sns.catplot(x='rounded_age', y='id', col='clean_value', data=count_by_age[count_by_age.clean_value != 'Include'], hue='run_name', col_wrap=3, kind="bar")
 p
 
 
-# In[40]:
+# In[ ]:
 
 
 compare.subject_stats_comparison(combined)
