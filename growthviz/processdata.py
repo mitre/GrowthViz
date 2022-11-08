@@ -120,7 +120,7 @@ def keep_age_range(df, mode):
     if mode == "adults":
         return df[df["age"].between(18, 80, inclusive="both")]
     elif mode == "pediatrics":
-        return df[df["age"].between(0, 30, inclusive="both")]
+        return df[df["age"].between(0, 25, inclusive="both")]
 
 
 def setup_merged_df(obs_df):
