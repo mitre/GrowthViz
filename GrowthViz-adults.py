@@ -25,7 +25,7 @@
 # 
 # Jupyter Notebooks have documentation cells, such as this one, and code cells like the one below. The notebook server runs the code and provides results (if applicable) back in the notebook. The following code cell loads the libraries necessary for the tool to work. If you would like to incorporate other Python libraries to assist in data exploration, they can be added here. Removing libraries from this cell will very likely break the tool.
 
-# In[ ]:
+# In[2]:
 
 
 import matplotlib.pyplot as plt
@@ -142,7 +142,7 @@ obs_full = processdata.setup_individual_obs_df(cleaned_obs)
 obs_full.head()
 
 
-# In the following cell, the `charts.make_age_charts` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily pediatrics, you will want to switch to the pediatrics notebooks. The function then **removes** patients in the excluded categories (below 18 and above 80).
+# In the following cell, the `charts.make_age_charts` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily pediatrics, you will want to switch to the pediatrics notebook.
 
 # In[ ]:
 

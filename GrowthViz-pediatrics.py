@@ -114,7 +114,7 @@ cleaned_obs = pd.read_csv("growthviz-data/sample-pediatrics-data.csv")
 cleaned_obs.head()
 
 
-# # This next cell runs through a series of data checks on the original data file, such as making sure all values of `sex` are either 0 or 1, or no age values are negative.
+# This next cell runs through a series of data checks on the original data file, such as making sure all values of `sex` are either 0 or 1, or no age values are negative.
 
 # In[ ]:
 
@@ -135,7 +135,7 @@ else:
 obs_full = processdata.setup_individual_obs_df(cleaned_obs)
 
 
-# In the following cell, the `charts.make_age_charts` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily adults, you will want to switch to the adults notebooks. The function then **removes** patients in the excluded categories (below 2 and above 25).
+# In the following cell, the `charts.make_age_charts` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily adults, you will want to switch to the adults notebook.
 
 # In[ ]:
 
@@ -549,10 +549,10 @@ compare.subject_comparison_percentage(combined)
 # 
 # The following visualizations show exclusions at age. Each plot shows a single exclusion type with the different runs shown in different colors.
 
-# In[ ]:
+# In[1]:
 
 
-combined['rounded_age'] = np.around(combined.age)
+combined['rounded_age'] = np.around(combined.age).astype(int)
 
 
 # In[ ]:
