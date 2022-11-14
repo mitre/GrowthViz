@@ -549,7 +549,7 @@ compare.subject_comparison_percentage(combined)
 # 
 # The following visualizations show exclusions at age. Each plot shows a single exclusion type with the different runs shown in different colors.
 
-# In[1]:
+# In[ ]:
 
 
 combined['rounded_age'] = np.around(combined.age).astype(int)

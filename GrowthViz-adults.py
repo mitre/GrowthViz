@@ -25,7 +25,7 @@
 # 
 # Jupyter Notebooks have documentation cells, such as this one, and code cells like the one below. The notebook server runs the code and provides results (if applicable) back in the notebook. The following code cell loads the libraries necessary for the tool to work. If you would like to incorporate other Python libraries to assist in data exploration, they can be added here. Removing libraries from this cell will very likely break the tool.
 
-# In[2]:
+# In[ ]:
 
 
 import matplotlib.pyplot as plt
@@ -246,6 +246,45 @@ processdata.exclusion_information(obs)
 # # Finding Individuals
 # 
 # This next cell creates an interactive tool that can be used to explore patients. The `sumstats.add_mzscored_to_merged_df` function will add modified Z Scores for height, weight and BMI to `merged_df`. The tool uses [Qgrid](https://github.com/quantopian/qgrid) to create the interactive table. Clicking on a row will create a plot for the individual below the table.
+
+# In[ ]:
+
+
+mdf = sumstats.add_mzscored_to_merged_df_adults(merged_df, percentiles_wide) 
+mdf['wtz'] = (mdf['weight'] - mdf['Mean_weight'])/mdf['sd_weight']
+mdf['htz'] = (mdf['height'] - mdf['Mean_height'])/mdf['sd_height']
+mdf['BMIz'] = (mdf['bmi'] - mdf['Mean_bmi'])/mdf['sd_bmi']
+mdf.head()
+
+col_opt = {
+    'width': 20,
+}
+col_def = {
+    'subjid': { 'width': 80 },
+    'sex': { 'width': 30 },
+    'age': { 'width': 30 },
+    'height': { 'width': 50 },
+    'height_cat': { 'width': 80 },
+    'htz': { 'width': 50 },
+    'weight': { 'width': 50 },
+    'weight_cat': { 'width': 80 },
+    'wtz': { 'width': 50 },
+    'bmi': { 'width': 40 },
+    'BMIz': { 'width': 30 },
+}
+g = qgrid.show_grid(charts.top_ten(mdf, 'weight'), precision=3, column_options=col_opt, column_definitions=col_def)
+ind_out = widgets.Output()
+def handle_selection_change(_event, _widget):
+    sdf = g.get_selected_df()
+    ind_out.clear_output()
+    if sdf.shape[0] >= 1:
+        subjid = sdf.subjid.iloc[0]
+        with ind_out:
+            charts.overlap_view_adults(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, bmi_percentiles, ht_percentiles)
+            display(plt.show())
+g.on('selection_changed', handle_selection_change)    
+widgets.VBox([g, ind_out])
+
 
 # It can be useful to copy values from the `subjid` column in the results above for use in visualizations in the rest of the tool.
 # 
