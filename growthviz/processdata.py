@@ -116,89 +116,11 @@ def setup_percentiles_pediatrics(percentiles_file):
 
 
 def keep_age_range(df, mode):
-    """
-    Restricts patient data to acceptable age range for notebooks
-    """
-    obs_grp = df
-    # create age buckets for chart
-    def label_excl_grp(row):
-        if mode == "adults":
-            if row["age"] < 18:
-                return "  Below 18 (Exclude)"
-            if (row["age"] >= 18) & (row["age"] < 30):
-                return " 18 to < 30"
-            if (row["age"] >= 30) & (row["age"] < 40):
-                return " 30 to < 40"
-            if (row["age"] >= 40) & (row["age"] < 50):
-                return " 40 to < 50"
-            if (row["age"] >= 50) & (row["age"] < 60):
-                return " 50 to < 60"
-            if (row["age"] >= 60) & (row["age"] <= 65):
-                return " 60 to 65"
-            if (row["age"] > 65) & (row["age"] <= 80):
-                return " > 65 to 80 (Not Recommended)"
-            if row["age"] > 80:
-                return "Above 80 (Exclude)"
-        elif mode == "pediatrics":
-            if row["age"] < 2:
-                return "  Below 2 (Exclude)"
-            if (row["age"] >= 2) & (row["age"] < 5):
-                return " 02 to < 05"
-            if (row["age"] >= 5) & (row["age"] < 8):
-                return " 05 to < 08"
-            if (row["age"] >= 8) & (row["age"] < 11):
-                return " 08 to < 11"
-            if (row["age"] >= 11) & (row["age"] < 14):
-                return " 11 to < 14"
-            if (row["age"] >= 14) & (row["age"] < 17):
-                return " 14 to < 17"
-            if (row["age"] >= 17) & (row["age"] <= 20):
-                return " 17 to 20"
-            if (row["age"] > 20) & (row["age"] <= 25):
-                return " > 20 to 25 (Not Recommended)"
-            if row["age"] > 25:
-                return "Above 25 (Exclude)"
-
-    label_excl_col = obs_grp.apply(lambda row: label_excl_grp(row), axis=1)
-    obs_grp = obs_grp.assign(cat=label_excl_col.values)
-    obs_grp = (
-        obs_grp.groupby("cat")["subjid"]
-        .count()
-        .reset_index()
-        .sort_values("cat", ascending=True)
-    )
-    # assign bar colors
-    cat_list = obs_grp["cat"].values.tolist()
-    color_list = []
-    patterns = []
-    for n in cat_list:
-        if ("Below" in n) | ("Above" in n):
-            color_list = color_list + ["C3"]
-            patterns = patterns + ["x"]
-        if ("to" in n) & ("Not" not in n):
-            color_list = color_list + ["C0"]
-            patterns = patterns + [""]
-        if "Not" in n:
-            color_list = color_list + ["orange"]
-            patterns = patterns + ["/"]
-    # create chart
-    fig, ax1 = plt.subplots()
-    obs_grp_plot = plt.bar(
-        obs_grp["cat"],
-        obs_grp["subjid"],
-        color=color_list,
-    )
-    for bar, pattern in zip(obs_grp_plot, patterns):
-        bar.set_hatch(pattern)
-    plt.xticks(rotation=45, ha="right")
-    ax1.get_yaxis().set_major_formatter(
-        mpl.ticker.FuncFormatter(lambda x, p: format(int(x), ","))
-    )
     # return specified age range
     if mode == "adults":
-        return df[df["age"].between(18, 80, inclusive=True)]
+        return df[df["age"].between(18, 80, inclusive="both")]
     elif mode == "pediatrics":
-        return df[df["age"].between(2, 25, inclusive=True)]
+        return df[df["age"].between(0, 25, inclusive="both")]
 
 
 def setup_merged_df(obs_df):

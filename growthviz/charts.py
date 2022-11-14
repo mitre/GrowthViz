@@ -1,8 +1,28 @@
 import math
-
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
+ADULTS_AGE_RANGES = pd.DataFrame({
+            "min": np.array([0, 18, 30, 40, 50, 60, 65, 80]),
+            "max": np.array([18, 30, 40, 50, 60, 65, 80, 150]),
+            "label": pd.Categorical(["<18", "18-30", "30-40", "40-50", "50-60", "60-65",
+                                "65-80", "80-"]),
+            "sort_order": pd.Series(["A", "B", "C", "D", "E", "F", "G", "H"], dtype="string"),
+            "color": pd.Series(["C3", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"),
+            "symbol": pd.Series(["x", "", "", "", "", "", "/", "x"], dtype="string"),
+  })
+
+PEDIATRICS_AGE_RANGES = pd.DataFrame({
+            "min": np.array([0, 2, 5, 8, 11, 14, 17, 20, 25]),
+            "max": np.array([2, 5, 8, 11, 14, 17, 20, 25, 150]),
+            "label": pd.Categorical(["0-2", "2-5", "5-8", "8-11", "11-14", "14-17",
+                                   "17-20", "20-25", "25-"]),
+            "sort_order": pd.Series(["A", "B", "C", "D", "E", "F", "G", "H", "I"], dtype="string"),
+            "color": pd.Series(["C0", "C0", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"),
+            "symbol": pd.Series(["", "", "", "", "", "", "", "/", "x"], dtype="string"),
+  })
 
 def weight_distr(df, mode):
     """
@@ -32,7 +52,75 @@ def weight_distr(df, mode):
         plt.xlabel("Recorded Weight (Kg)")
         plt.grid()
         plt.show()
-
+        
+def make_age_charts(df, mode):
+    
+    obs_grp = df 
+    
+    if mode == "adults":
+        label_frame = ADULTS_AGE_RANGES   
+    elif mode == "pediatrics":
+        label_frame = PEDIATRICS_AGE_RANGES
+    else:
+        raise Exception("Valid modes are 'adults' and 'pediatrics'")
+    
+    # New Categorizing function which adds label, color, pattern and sort order columns to the dataframe
+    # Adds these categories based on the age of each row in the dataframe
+    def add_categories_to_frame(df_data, df_reference):
+        categories = []
+        colors = []
+        patterns = []
+        sort_order = []
+        for j in range(len(df_data)):
+            for i in range(len(df_reference)):
+                minVal = df_reference['min'][i]
+                maxVal = df_reference['max'][i]
+                if df_data['age'][j] >= minVal and df_data['age'][j] < maxVal:
+                    categories.append(df_reference['label'][i])
+                    colors.append(df_reference['color'][i])
+                    patterns.append(df_reference['symbol'][i])
+                    sort_order.append(df_reference['sort_order'][i])
+        df_data['category'] = categories  
+        df_data['colors'] = colors  
+        df_data['patterns'] = patterns
+        df_data['sort_order'] = sort_order
+        return df_data
+    
+    # Call the categorizing function on the data
+    obs_grp = add_categories_to_frame(obs_grp, label_frame)
+    
+    # Groups the new dataframe by category, sort order, colors and patterns. It then counts the number of subject ids 
+    # in each group and sorts the values by sort order. 
+    obs_grp = (
+        obs_grp.groupby(["category", "sort_order", "colors", "patterns"])["subjid"]
+        .count()
+        .reset_index()
+        .sort_values(by=['sort_order'])
+    )
+    
+    # create chart
+    fig, ax1 = plt.subplots()
+    obs_grp_plot = plt.bar(
+        obs_grp["category"],
+        obs_grp["subjid"],
+        color=obs_grp["colors"],
+    )
+    
+    # Sets the pattern for each bar in the graph. 
+    for bar, pattern in zip(obs_grp_plot, obs_grp["patterns"]):
+        bar.set_hatch(pattern)
+    #plt.xticks(rotation=45, ha="right")
+    ax1.get_yaxis().set_major_formatter(
+        mpl.ticker.FuncFormatter(lambda x, p: format(int(x), ","))
+    )
+    
+    plt.ylabel("Number of Subjects")
+    plt.xlabel("Age Ranges (years)")
+    if mode == "pediatrics":
+        plt.title("Age Chart for Pediatrics")
+    elif mode == "adults":
+        plt.title("Age Chart for Adults")
+    
 
 def overlap_view_adults(
     obs_df,
