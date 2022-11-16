@@ -5,6 +5,12 @@ import numpy as np
 def setup_percentile_zscore_adults(percentiles_clean):
     """
     Creates mean/sd values to merge to adult data for z-score calculations
+    
+    Parameters:
+    percentiles_clean: (DataFrame) with adult percentiles
+    
+    Returns:
+    Dataframe with mean/sd values
     """
     dta_forz_long = percentiles_clean[["Mean", "Sex", "param", "age", "sd"]]
 
@@ -33,6 +39,14 @@ def setup_percentile_zscore_adults(percentiles_clean):
 def add_mzscored_to_merged_df_adults(merged_df, pctls):
     """
     Merges mean/sd values onto adult data for z-score calculations
+    
+    Parameters:
+    merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+               and sex columns
+    pctls: (DataFrame) with mean/sd values for adults
+    
+    Returns: 
+    merged Dataframe
     """
     pct_df = pctls.drop(columns={"age"})
     merged_df = merged_df.merge(pct_df, on=["sex", "rounded_age"], how="left")
@@ -44,6 +58,16 @@ def add_mzscored_to_merged_df_pediatrics(
 ):
     """
     Merges mean/sd values onto pediatrics data for z-score calculations
+    
+    Parameters:
+    merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+               and sex columns
+    wt_percentiles: (DataFrame) with weight percentiles
+    ht_percentiles: (DataFrame) with height percentiles
+    bmi_percentiles: (DataFrame) with bmi percentiles
+    
+    Returns: 
+    merged Dataframe
     """
     merged_df = calculate_modified_zscore_pediatrics(
         merged_df, wt_percentiles, "weight"
@@ -160,6 +184,7 @@ def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
     Parameters:
     merged_df: (DataFrame) with subjid, sex, weight and age columns
     percentiles: (DataFrame) CDC growth chart DataFrame with L, M, S values for the desired category
+    category: (String) name of category
 
     Returns
     The dataframe with a new zscore column mapped with the z_column_name list

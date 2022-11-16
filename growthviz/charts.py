@@ -27,6 +27,12 @@ PEDIATRICS_AGE_RANGES = pd.DataFrame({
 def weight_distr(df, mode):
     """
     Create charts with overall and outlier weight distributions (included values only)
+    
+    Parameters:
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include, category, colors, patterns, 
+        and sort_order columns
+    mode: (string) indicates how many of the weights you want to use. If set to 'high', the function will only use weights above 
+        a certain threshold. Otherwise, it displays all the weights. 
     """
     wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
     if mode == "high":
@@ -54,7 +60,14 @@ def weight_distr(df, mode):
         plt.show()
         
 def make_age_charts(df, mode):
+    """
+    Creates a chart with the age ranges in the dataset. Counts the number of subjids in each range.
     
+    Parameters:
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include, category, colors, patterns, 
+        and sort_order columns
+    mode: (string) indicates whether you want the adults or pediatrics values.    
+    """
     obs_grp = df 
     
     if mode == "adults":
@@ -147,7 +160,11 @@ def overlap_view_adults(
     include_percentiles: (Boolean) Controls whether the 5th and 95th percentile bands are displayed
                          on the chart
     wt_df: (DataFrame) with the CDC growth charts by age for weight
+    bmi_df: (DataFrame) with the CDC growth charts by age for bmi
     ht_df: (DataFrame) with the CDC growth charts by age for height
+    
+    Returns:
+    A plot showing the trajectory for an individual with all values present
     """
     individual = obs_df[obs_df.subjid == subjid]
     selected_param = individual[individual.param == param]
@@ -285,6 +302,9 @@ def overlap_view_pediatrics(
                          on the chart
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     ht_df: (DataFrame) with the CDC growth charts by age for height
+    
+    Returns:
+    A plot showing the trajectory for an individual with all values present
     """
     individual = obs_df[obs_df.subjid == subjid]
     selected_param = individual[individual.param == param]
@@ -362,6 +382,9 @@ def overlap_view_double_pediatrics(
     Parameters:
     obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
     subjid: (String) Id of the individuals to be plotted
+    show_all_measurements: (Boolean) indicates whether to show all measurements
+    show_excluded_values: (Boolean) indicates whether to show the excluded values
+    show_trajectory_with_exclusions: (Boolean) indicates whether to show the trajectory
     include_carry_forward: (Boolean) If True, it will show carry forward values as a triangle and the
                            yellow dashed line will include carry forward values. If False, carry
                            forwards are excluded and will be shown as red x's.
@@ -493,6 +516,13 @@ def overlap_view_double_pediatrics(
 def mult_obs(obs):
     """
     Removes individuals from consideration for five_by_five_view() charts that only have one observation in the data
+    
+    Parameters:
+    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include, category, colors, patterns, 
+        and sort_order columns
+        
+    Returns:
+    Dataframe where the individuals that only have one observation in the data are removed
     """
     obs["cat_count"] = obs.groupby(["subjid", "param"])["age"].transform("count")
     obs["one_rec"] = np.where(obs["cat_count"] == 1, 1, 0)
@@ -529,6 +559,13 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
     obs_df: (DataFrame) with subjid, measurement, param and clean_value columns
     subjids: An list of the ids of the individuals to be plotted
     param: (String) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
+    wt_df: (DataFrame) with the CDC growth charts by age for weight
+    ht_df: (DataFrame) with the CDC growth charts by age for height
+    bmi_df: (DataFrame) with the CDC growth charts by age for bmi
+    linestyle: (String) style of the line for each plot
+    
+    Returns:
+    Multiples plot
     """
     if len(subjids) == 0:
         print("No matching subjects found.")
@@ -633,6 +670,15 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
 def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
     """
     A version of bmi_with_percentiles() that provides the option of looking at wt or ht as well
+    
+    Parameters:
+    merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+               and sex columns
+    subjids: An list of the ids of the individuals to be plotted
+    param: (String) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
+    wt_df: (DataFrame) with the CDC growth charts by age for weight
+    ht_df: (DataFrame) with the CDC growth charts by age for height
+    bmi_df: (DataFrame) with the CDC growth charts by age for bmi
     """
     individual = merged_df[(merged_df.subjid == subjid) & (merged_df.param == param)]
     fig, ax = plt.subplots(1, 2, sharey="row")
