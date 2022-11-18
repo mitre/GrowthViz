@@ -99,16 +99,16 @@ def bmi_stats(
     Parameters:
     merged_df: (DataFrame) with bmi, rounded_age and sex columns
     out: (ipywidgets.Output) to display the results, if provided
-    include_min: (Boolean) Whether to include the minimum value column
-    include_mean: (Boolean) Whether to include the mean value column
-    include_max: (Boolean) Whether to include the maximum value column
-    include_std: (Boolean) Whether to include the standard deviation column
-    include_mean_diff: (Boolean) Whether to include the difference between the raw and
+    include_min: (bool) Whether to include the minimum value column
+    include_mean: (bool) Whether to include the mean value column
+    include_max: (bool) Whether to include the maximum value column
+    include_std: (bool) Whether to include the standard deviation column
+    include_mean_diff: (bool) Whether to include the difference between the raw and
               clean mean value column
-    include_count: (Boolean) Whether to include the count column
-    age_range: (List) Two elements containing the minimum and maximum ages that should be
+    include_count: (bool) Whether to include the count column
+    age_range: (list) Two elements containing the minimum and maximum ages that should be
               included in the statistics
-    include_missing: (Boolean) Whether to include the missing (0) heights and weights that impact
+    include_missing: (bool) Whether to include the missing (0) heights and weights that impact
               raw columns
 
     Returns:
@@ -184,7 +184,7 @@ def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
     Parameters:
     merged_df: (DataFrame) with subjid, sex, weight and age columns
     percentiles: (DataFrame) CDC growth chart DataFrame with L, M, S values for the desired category
-    category: (String) name of category
+    category: (str) name of category
 
     Returns
     The dataframe with a new zscore column mapped with the z_column_name list

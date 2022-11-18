@@ -7,10 +7,10 @@ def check_patient_data(file):
     Runs through a series of data checks on the original data file
     
     Parameters:
-    file: (file) csv data file to check
+    file: (str) name of csv data file to check
     
     Returns:
-    A list of warnings (strings)
+    A list of warnings (list)
     """
     d = pd.read_csv(file)
     d.rename(columns={"agedays": "age"}, inplace=True)

@@ -40,7 +40,7 @@ def setup_percentiles_adults(percentiles):
     Processes adults percentiles from CDC
     
     Parameters:
-    percentiles: (file) CDC Growth Chart Percentile Data File
+    percentiles: (str) CDC Growth Chart Percentile Data File
     
     Returns:
     DataFrame with adult percentiles
@@ -107,7 +107,7 @@ def setup_percentiles_pediatrics(percentiles_file):
     Processes pediatrics percentiles from CDC
     
     Parameters:
-    percentiles: (file) CDC Growth Chart Percentile Data File
+    percentiles: (str) CDC Growth Chart Percentile Data File
     
     Returns:
     DataFrame with pediatrics percentiles
@@ -140,7 +140,7 @@ def keep_age_range(df, mode):
     Parameters:
     df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include, category, colors, patterns, 
         and sort_order columns
-    mode: (string) indicates whether you want the adults or pediatrics values
+    mode: (str) indicates whether you want the adults or pediatrics values
     
     Returns:
     DataFrame with filtered ages
@@ -242,7 +242,7 @@ def label_incl(row):
     row: (Series) dataframe row 
     
     Returns:
-    Category (String) for BMI calculation
+    Category (str) for BMI calculation
     """
     if row["include_both"] == True:
         return "Include"
@@ -291,7 +291,7 @@ def data_frame_names(da_locals):
     Returns a list of dataframe names
     
     Parameters:
-    da_locals: (dictionary) all the local variables
+    da_locals: (dict) all the local variables
     
     Returns:
     list of the dataframe names
@@ -309,7 +309,7 @@ def export_to_csv(da_locals, selection_widget, out):
     Saves out csv file of dataframe
     
     Parameters:
-    da_locals: (dictionary) all the local variables
+    da_locals: (dict) all the local variables
     selection_widget: (Widget) interactive object used
     out: (Widgets.Outputs) output from widget
     
