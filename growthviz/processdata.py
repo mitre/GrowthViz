@@ -8,6 +8,12 @@ import pandas as pd
 def setup_individual_obs_df(obs_df):
     """
     Standardizes adults and pediatrics files for clean processing in GrowthViz notebooks
+
+    Parameters:
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+
+    Returns:
+    DataFrame with updated columns
     """
     df = obs_df.copy()
     df.rename(columns={"clean_res": "clean_value"}, inplace=True)
@@ -32,6 +38,12 @@ def setup_individual_obs_df(obs_df):
 def setup_percentiles_adults(percentiles):
     """
     Processes adults percentiles from CDC
+
+    Parameters:
+    percentiles: (str) CDC Growth Chart Percentile Data File
+
+    Returns:
+    DataFrame with adult percentiles
     """
     # expand decade rows into one row per year
     pct = percentiles[
@@ -93,6 +105,12 @@ def setup_percentiles_adults(percentiles):
 def setup_percentiles_pediatrics(percentiles_file):
     """
     Processes pediatrics percentiles from CDC
+
+    Parameters:
+    percentiles: (str) CDC Growth Chart Percentile Data File
+
+    Returns:
+    DataFrame with pediatrics percentiles
     """
     percentiles = pd.read_csv(
         f"growthviz-data/ext/{percentiles_file}",
@@ -116,16 +134,34 @@ def setup_percentiles_pediatrics(percentiles_file):
 
 
 def keep_age_range(df, mode):
-    # return specified age range
+    """
+    Returns specified age range
+
+    Parameters:
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
+        category, colors, patterns, and sort_order columns
+    mode: (str) indicates whether you want the "adults" (18-80) or "pediatrics" (0-25) values
+
+    Returns:
+    DataFrame with filtered ages, unchanged if invalid mode is specified
+    """
     if mode == "adults":
         return df[df["age"].between(18, 80, inclusive="both")]
     elif mode == "pediatrics":
         return df[df["age"].between(0, 25, inclusive="both")]
+    else:
+        return df
 
 
 def setup_merged_df(obs_df):
     """
     Merges together weight and height data for calculating BMI
+
+    Parameters:
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+
+    Returns:
+    DataFrame with merged data
     """
     obs_df = obs_df.assign(height=obs_df["measurement"], weight=obs_df["measurement"])
     obs_df.loc[obs_df.param == "WEIGHTKG", "height"] = np.NaN
@@ -203,6 +239,12 @@ def exclusion_information(obs):
 def label_incl(row):
     """
     Categorizes BMI calculations as Include, Implausible, or unable to calculate (Only Wt or Ht)
+
+    Parameters:
+    row: (Series) dataframe row
+
+    Returns:
+    Category (str) for BMI calculation
     """
     if row["include_both"] == True:
         return "Include"
@@ -215,6 +257,15 @@ def label_incl(row):
 def setup_bmi_adults(merged_df, obs):
     """
     Appends BMI data onto adults weight and height observations
+
+    Parameters:
+    merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+               and sex columns
+    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
+        category, colors, patterns, and sort_order columns
+
+    Returns:
+    DataFrame with appended values
     """
     data = merged_df[
         [
@@ -240,6 +291,12 @@ def setup_bmi_adults(merged_df, obs):
 def data_frame_names(da_locals):
     """
     Returns a list of dataframe names
+
+    Parameters:
+    da_locals: (dict) all the local variables
+
+    Returns:
+    list of the dataframe names
     """
     frames = []
     for key, value in da_locals.items():
@@ -252,6 +309,12 @@ def data_frame_names(da_locals):
 def export_to_csv(da_locals, selection_widget, out):
     """
     Saves out csv file of dataframe
+
+    Parameters:
+    da_locals: (dict) all the local variables
+    selection_widget: (Widget) interactive object used
+    out: (Widgets.Outputs) output from widget
+
     """
     df_name = selection_widget.value
     da_locals[df_name].to_csv("output/{}.csv".format(df_name), index=False)

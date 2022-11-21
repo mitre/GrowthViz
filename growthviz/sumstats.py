@@ -5,6 +5,12 @@ import numpy as np
 def setup_percentile_zscore_adults(percentiles_clean):
     """
     Creates mean/sd values to merge to adult data for z-score calculations
+
+    Parameters:
+    percentiles_clean: (DataFrame) with adult percentiles
+
+    Returns:
+    Dataframe with mean/sd values
     """
     dta_forz_long = percentiles_clean[["Mean", "Sex", "param", "age", "sd"]]
 
@@ -33,6 +39,14 @@ def setup_percentile_zscore_adults(percentiles_clean):
 def add_mzscored_to_merged_df_adults(merged_df, pctls):
     """
     Merges mean/sd values onto adult data for z-score calculations
+
+    Parameters:
+    merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+               and sex columns
+    pctls: (DataFrame) with mean/sd values for adults
+
+    Returns:
+    merged Dataframe
     """
     pct_df = pctls.drop(columns={"age"})
     merged_df = merged_df.merge(pct_df, on=["sex", "rounded_age"], how="left")
@@ -44,6 +58,16 @@ def add_mzscored_to_merged_df_pediatrics(
 ):
     """
     Merges mean/sd values onto pediatrics data for z-score calculations
+
+    Parameters:
+    merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+               and sex columns
+    wt_percentiles: (DataFrame) with weight percentiles
+    ht_percentiles: (DataFrame) with height percentiles
+    bmi_percentiles: (DataFrame) with bmi percentiles
+
+    Returns:
+    merged Dataframe
     """
     merged_df = calculate_modified_zscore_pediatrics(
         merged_df, wt_percentiles, "weight"
@@ -75,16 +99,16 @@ def bmi_stats(
     Parameters:
     merged_df: (DataFrame) with bmi, rounded_age and sex columns
     out: (ipywidgets.Output) to display the results, if provided
-    include_min: (Boolean) Whether to include the minimum value column
-    include_mean: (Boolean) Whether to include the mean value column
-    include_max: (Boolean) Whether to include the maximum value column
-    include_std: (Boolean) Whether to include the standard deviation column
-    include_mean_diff: (Boolean) Whether to include the difference between the raw and
+    include_min: (bool) Whether to include the minimum value column
+    include_mean: (bool) Whether to include the mean value column
+    include_max: (bool) Whether to include the maximum value column
+    include_std: (bool) Whether to include the standard deviation column
+    include_mean_diff: (bool) Whether to include the difference between the raw and
               clean mean value column
-    include_count: (Boolean) Whether to include the count column
-    age_range: (List) Two elements containing the minimum and maximum ages that should be
+    include_count: (bool) Whether to include the count column
+    age_range: (list) Two elements containing the minimum and maximum ages that should be
               included in the statistics
-    include_missing: (Boolean) Whether to include the missing (0) heights and weights that impact
+    include_missing: (bool) Whether to include the missing (0) heights and weights that impact
               raw columns
 
     Returns:
@@ -106,8 +130,7 @@ def bmi_stats(
     age_filtered["sex"] = age_filtered.sex.replace(0, "M").replace(1, "F")
     agg_functions = []
     formatters = {}
-    # if not include_missing:
-    #   age_filtered = age_filtered
+
     if include_min:
         agg_functions.append("min")
         formatters["min_clean"] = "{:.2f}".format
@@ -160,6 +183,7 @@ def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
     Parameters:
     merged_df: (DataFrame) with subjid, sex, weight and age columns
     percentiles: (DataFrame) CDC growth chart DataFrame with L, M, S values for the desired category
+    category: (str) name of category
 
     Returns
     The dataframe with a new zscore column mapped with the z_column_name list
@@ -169,7 +193,8 @@ def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
         pct_cpy["M"]
         * np.power((1 + pct_cpy["L"] * pct_cpy["S"] * 2), (1 / pct_cpy["L"]))
     ) - pct_cpy["M"]
-    # Calculate an age in months by rounding and then adding 0.5 to have values that match the growth chart
+    # Calculate an age in months by rounding and then adding 0.5 to have values that match the
+    # growth chart
     merged_df["agemos"] = np.around(merged_df["age"] * 12) + 0.5
     mswpt = merged_df.merge(
         pct_cpy[["Agemos", "M", "Sex", "half_of_two_z_scores"]],

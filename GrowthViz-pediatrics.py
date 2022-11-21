@@ -135,6 +135,12 @@ else:
 obs_full = processdata.setup_individual_obs_df(cleaned_obs)
 
 
+# In[ ]:
+
+
+obs_full.head()
+
+
 # In the following cell, the `charts.make_age_charts` function visually displays the range of ages in the dataset, with those to be excluded identified by the red bars with the **x** pattern, and those that are outside the optimal range of the notebook identified by the orange bars with the **/** pattern. As noted above, if the population in the dataset is primarily adults, you will want to switch to the adults notebook.
 
 # In[ ]:
@@ -151,6 +157,12 @@ charts.make_age_charts(obs_full, 'pediatrics')
 
 
 obs = processdata.keep_age_range(obs_full, 'pediatrics')
+
+
+# In[ ]:
+
+
+obs.head()
 
 
 # After that, `charts.weight_distr` creates two visualizations. The first shows a distribution of all of the included weights in the dataset. The second shows weights above a certain threshold to see whether there are spikes at a certain *Included* weights that might indicate that a commonly used scale maxes out at a certain value. This chart is restricted to values of 135kg or higher (rounded to the nearest KG) to make patterns in higher weights easier to identify. This potential issue is important to keep in mind when conducting an analysis.
