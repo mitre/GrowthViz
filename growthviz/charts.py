@@ -1,38 +1,54 @@
 import math
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-ADULTS_AGE_RANGES = pd.DataFrame({
-            "min": np.array([0, 18, 30, 40, 50, 60, 65, 80]),
-            "max": np.array([18, 30, 40, 50, 60, 65, 80, 150]),
-            "label": pd.Categorical(["<18", "18-30", "30-40", "40-50", "50-60", "60-65",
-                                "65-80", "80-"]),
-            "sort_order": pd.Series(["A", "B", "C", "D", "E", "F", "G", "H"], dtype="string"),
-            "color": pd.Series(["C3", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"),
-            "symbol": pd.Series(["x", "", "", "", "", "", "/", "x"], dtype="string"),
-  })
+ADULTS_AGE_RANGES = pd.DataFrame(
+    {
+        "min": np.array([0, 18, 30, 40, 50, 60, 65, 80]),
+        "max": np.array([18, 30, 40, 50, 60, 65, 80, 150]),
+        "label": pd.Categorical(
+            ["<18", "18-30", "30-40", "40-50", "50-60", "60-65", "65-80", "80-"]
+        ),
+        "sort_order": pd.Series(
+            ["A", "B", "C", "D", "E", "F", "G", "H"], dtype="string"
+        ),
+        "color": pd.Series(
+            ["C3", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"
+        ),
+        "symbol": pd.Series(["x", "", "", "", "", "", "/", "x"], dtype="string"),
+    }
+)
 
-PEDIATRICS_AGE_RANGES = pd.DataFrame({
-            "min": np.array([0, 2, 5, 8, 11, 14, 17, 20, 25]),
-            "max": np.array([2, 5, 8, 11, 14, 17, 20, 25, 150]),
-            "label": pd.Categorical(["0-2", "2-5", "5-8", "8-11", "11-14", "14-17",
-                                   "17-20", "20-25", "25-"]),
-            "sort_order": pd.Series(["A", "B", "C", "D", "E", "F", "G", "H", "I"], dtype="string"),
-            "color": pd.Series(["C0", "C0", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"),
-            "symbol": pd.Series(["", "", "", "", "", "", "", "/", "x"], dtype="string"),
-  })
+PEDIATRICS_AGE_RANGES = pd.DataFrame(
+    {
+        "min": np.array([0, 2, 5, 8, 11, 14, 17, 20, 25]),
+        "max": np.array([2, 5, 8, 11, 14, 17, 20, 25, 150]),
+        "label": pd.Categorical(
+            ["0-2", "2-5", "5-8", "8-11", "11-14", "14-17", "17-20", "20-25", "25-"]
+        ),
+        "sort_order": pd.Series(
+            ["A", "B", "C", "D", "E", "F", "G", "H", "I"], dtype="string"
+        ),
+        "color": pd.Series(
+            ["C0", "C0", "C0", "C0", "C0", "C0", "C0", "orange", "C3"], dtype="string"
+        ),
+        "symbol": pd.Series(["", "", "", "", "", "", "", "/", "x"], dtype="string"),
+    }
+)
+
 
 def weight_distr(df, mode):
     """
     Create charts with overall and outlier weight distributions (included values only)
-    
+
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include, category, colors, patterns, 
-        and sort_order columns
-    mode: (str) indicates how many of the weights you want to use. If set to 'high', the function will only use weights above 
-        a certain threshold. Otherwise, it displays all the weights. 
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
+        category, colors, patterns, and sort_order columns
+    mode: (str) indicates how many of the weights you want to use. If set to 'high', the function
+        will only use weights above a certain threshold. Otherwise, it displays all the weights.
     """
     wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
     if mode == "high":
@@ -58,27 +74,28 @@ def weight_distr(df, mode):
         plt.xlabel("Recorded Weight (Kg)")
         plt.grid()
         plt.show()
-        
+
+
 def make_age_charts(df, mode):
     """
     Creates a chart with the age ranges in the dataset. Counts the number of subjids in each range.
-    
+
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include, category, colors, patterns, 
-        and sort_order columns
-    mode: (str) indicates whether you want the adults or pediatrics values.    
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
+        category, colors, patterns, and sort_order columns
+    mode: (str) indicates whether you want the adults or pediatrics values.
     """
-    obs_grp = df 
-    
+    obs_grp = df
+
     if mode == "adults":
-        label_frame = ADULTS_AGE_RANGES   
+        label_frame = ADULTS_AGE_RANGES
     elif mode == "pediatrics":
         label_frame = PEDIATRICS_AGE_RANGES
     else:
         raise Exception("Valid modes are 'adults' and 'pediatrics'")
-    
-    # New Categorizing function which adds label, color, pattern and sort order columns to the dataframe
-    # Adds these categories based on the age of each row in the dataframe
+
+    # Adds label, color, pattern and sort order columns to the dataframe based on the age of each
+    # row in the dataframe
     def add_categories_to_frame(df_data, df_reference):
         categories = []
         colors = []
@@ -86,31 +103,31 @@ def make_age_charts(df, mode):
         sort_order = []
         for j in range(len(df_data)):
             for i in range(len(df_reference)):
-                minVal = df_reference['min'][i]
-                maxVal = df_reference['max'][i]
-                if df_data['age'][j] >= minVal and df_data['age'][j] < maxVal:
-                    categories.append(df_reference['label'][i])
-                    colors.append(df_reference['color'][i])
-                    patterns.append(df_reference['symbol'][i])
-                    sort_order.append(df_reference['sort_order'][i])
-        df_data['category'] = categories  
-        df_data['colors'] = colors  
-        df_data['patterns'] = patterns
-        df_data['sort_order'] = sort_order
+                minVal = df_reference["min"][i]
+                maxVal = df_reference["max"][i]
+                if df_data["age"][j] >= minVal and df_data["age"][j] < maxVal:
+                    categories.append(df_reference["label"][i])
+                    colors.append(df_reference["color"][i])
+                    patterns.append(df_reference["symbol"][i])
+                    sort_order.append(df_reference["sort_order"][i])
+        df_data["category"] = categories
+        df_data["colors"] = colors
+        df_data["patterns"] = patterns
+        df_data["sort_order"] = sort_order
         return df_data
-    
+
     # Call the categorizing function on the data
     obs_grp = add_categories_to_frame(obs_grp, label_frame)
-    
-    # Groups the new dataframe by category, sort order, colors and patterns. It then counts the number of subject ids 
-    # in each group and sorts the values by sort order. 
+
+    # Groups the new dataframe by category, sort order, colors and patterns. It then counts the
+    # number of subject ids in each group and sorts the values by sort order.
     obs_grp = (
         obs_grp.groupby(["category", "sort_order", "colors", "patterns"])["subjid"]
         .count()
         .reset_index()
-        .sort_values(by=['sort_order'])
+        .sort_values(by=["sort_order"])
     )
-    
+
     # create chart
     fig, ax1 = plt.subplots()
     obs_grp_plot = plt.bar(
@@ -118,22 +135,21 @@ def make_age_charts(df, mode):
         obs_grp["subjid"],
         color=obs_grp["colors"],
     )
-    
-    # Sets the pattern for each bar in the graph. 
+
+    # Sets the pattern for each bar in the graph.
     for bar, pattern in zip(obs_grp_plot, obs_grp["patterns"]):
         bar.set_hatch(pattern)
-    #plt.xticks(rotation=45, ha="right")
     ax1.get_yaxis().set_major_formatter(
         mpl.ticker.FuncFormatter(lambda x, p: format(int(x), ","))
     )
-    
+
     plt.ylabel("Number of Subjects")
     plt.xlabel("Age Ranges (years)")
     if mode == "pediatrics":
         plt.title("Age Chart for Pediatrics")
     elif mode == "adults":
         plt.title("Age Chart for Adults")
-    
+
 
 def overlap_view_adults(
     obs_df,
@@ -162,7 +178,7 @@ def overlap_view_adults(
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     bmi_df: (DataFrame) with the CDC growth charts by age for bmi
     ht_df: (DataFrame) with the CDC growth charts by age for height
-    
+
     Returns:
     A plot showing the trajectory for an individual with all values present
     """
@@ -178,7 +194,7 @@ def overlap_view_adults(
     plt.rcParams["figure.figsize"] = [6, 4]
     selected_param_plot = selected_param.plot.line(
         x="age", y="measurement", label="All Measurements", lw=3
-    )  # could instead have the marker on the all measurements line, a little messier
+    )
     selected_param_plot.plot(
         included_selected_param["age"],
         included_selected_param["measurement"],
@@ -187,7 +203,7 @@ def overlap_view_adults(
         lw=3,
         marker="o",
         label="Included Only",
-    )  # could also try violet
+    )
     selected_param_plot.scatter(
         x=excluded_selected_param.age,
         y=excluded_selected_param.measurement,
@@ -291,6 +307,7 @@ def overlap_view_pediatrics(
     Creates a chart showing the trajectory for an individual with all values present. All values will
     be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
     shows the resulting trajectory when excluded values are removed.
+
     Parameters:
     obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
     subjid: (str) Id of the individuals to be plotted
@@ -302,7 +319,7 @@ def overlap_view_pediatrics(
                          on the chart
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     ht_df: (DataFrame) with the CDC growth charts by age for height
-    
+
     Returns:
     A plot showing the trajectory for an individual with all values present
     """
@@ -515,12 +532,13 @@ def overlap_view_double_pediatrics(
 
 def mult_obs(obs):
     """
-    Removes individuals from consideration for five_by_five_view() charts that only have one observation in the data
-    
+    Removes individuals from consideration for five_by_five_view() charts that only have one
+    observation in the data
+
     Parameters:
-    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include, category, colors, patterns, 
-        and sort_order columns
-        
+    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
+        category, colors, patterns, and sort_order columns
+
     Returns:
     Dataframe where the individuals that only have one observation in the data are removed
     """
@@ -563,7 +581,7 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
     ht_df: (DataFrame) with the CDC growth charts by age for height
     bmi_df: (DataFrame) with the CDC growth charts by age for bmi
     linestyle: (str) style of the line for each plot
-    
+
     Returns:
     Multiples plot
     """
@@ -639,7 +657,7 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
     merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
                and sex columns
     bmi_percentiles: (DataFrame) CDC growth chart containing BMI percentiles for age
-    subjid: (str) Id of the individual to plot
+    subjid: (str) id of the individual to plot
     """
     individual = merged_df[merged_df.subjid == subjid]
     fig, ax = plt.subplots(1, 2)
@@ -670,11 +688,11 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
 def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
     """
     A version of bmi_with_percentiles() that provides the option of looking at wt or ht as well
-    
+
     Parameters:
     merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
                and sex columns
-    subjids: (list) An list of the ids of the individuals to be plotted
+    subjids: (list) A list of the ids of the individuals to be plotted
     param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     ht_df: (DataFrame) with the CDC growth charts by age for height
@@ -724,8 +742,8 @@ def top_ten(
     Displays the top ten records depending on the criteria passed in
 
     Parameters:
-    merged_df: (DataFrame) with subjid, bmi, height, weight, include_height, include_weight, rounded_age
-               and sex columns
+    merged_df: (DataFrame) with subjid, bmi, height, weight, include_height, include_weight,
+        rounded_age and sex columns
     field: (str) What field to sort on. Expected values are "height", "weight" and "bmi"
     age: (list) Two elements containing the minimum and maximum ages that should be
          included in the statistics. None if no age filtering desired.
@@ -733,7 +751,7 @@ def top_ten(
     wexclusion: (list) of weight exclusions to filter on. None - no weight exclusion filtering
     hexclusion: (list) of height exclusions to filter on. None - no height exclusion filtering
     order: (str) Sort order - Expected values are "smallest" and "largest"
-    out: (ipywidgets.Output) displays the resilrs
+    out: (ipywidgets.Output) displays the results
 
     Returns:
     If out is None, it will return a DataFrame. If out is provided, results will be displayed

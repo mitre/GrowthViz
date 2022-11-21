@@ -5,10 +5,10 @@ import pandas as pd
 def check_patient_data(file):
     """
     Runs through a series of data checks on the original data file
-    
+
     Parameters:
     file: (str) name of csv data file to check
-    
+
     Returns:
     A list of warnings (list)
     """
