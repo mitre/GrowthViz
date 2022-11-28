@@ -1,9 +1,11 @@
+# Adapted from:
+# https://github.com/VaultVulp/gp-docker-action#complete-workflow-example
 name: Build and publish
 
 on: 
   push:
     branches:
-    - "v3-dev" # Running this workflow only for develop branch
+    - "v3-dev"
 
 jobs:
   build-and-publish-head:
