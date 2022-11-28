@@ -1,6 +1,6 @@
 FROM jupyter/scipy-notebook
 
-LABEL maintainer="Robi Scalfani <rscalfani@mitre.org>"
+LABEL maintainer="Daniel Chudnov <dlchudnov@mitre.org>"
 
 COPY LICENSE /LICENSE
 COPY README.md /README.md
