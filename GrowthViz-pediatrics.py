@@ -248,13 +248,20 @@ col_def = {
 g = qgrid.show_grid(charts.top_ten(mdf, 'weight'), precision=3, column_options=col_opt, column_definitions=col_def)
 ind_out = widgets.Output()
 def handle_selection_change(_event, _widget):
+    df = g.get_changed_df()
+    if len(_event['old']) > 0:
+        lastSubj = df.iloc[[_event['old'][0]]]['subjid'].iloc[0]
+    else:
+        lastSubj = -1
+    currSubj = df.iloc[[_event['new'][0]]]['subjid'].iloc[0]
     sdf = g.get_selected_df()
-    ind_out.clear_output()
     if sdf.shape[0] >= 1:
         subjid = sdf.subjid.iloc[0]
         with ind_out:
-            charts.overlap_view_pediatrics(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, ht_percentiles)
-            display(plt.show())
+            if currSubj != lastSubj:
+                ind_out.clear_output()
+                charts.overlap_view_pediatrics(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, ht_percentiles)
+                display(plt.show())
 g.on('selection_changed', handle_selection_change)    
 widgets.VBox([g, ind_out])
 
