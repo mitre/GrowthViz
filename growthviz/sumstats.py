@@ -170,6 +170,8 @@ def bmi_stats(
     if out == None:
         return merged_stats
     else:
+        with out:
+            clear_output(wait=False)
         out.clear_output()
         out.append_display_data(Markdown("## Female"))
         out.append_display_data(merged_stats.loc["F"].style.format(formatters))
