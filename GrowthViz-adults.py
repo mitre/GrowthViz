@@ -468,9 +468,9 @@ hbox = widgets.HBox([min_toggle, mean_toggle, max_toggle, std_toggle, count_togg
 ui = widgets.VBox([age_range, hbox, include_missing_values])
 sum_out = widgets.Output()
 widgets.interactive_output(sumstats.bmi_stats, {'merged_df': fixed(merged_df), 'include_min': min_toggle, 
-         'include_mean': mean_toggle, 'include_max': max_toggle, 'include_std': std_toggle, 
-         'include_mean_diff': diff_toggle, 'include_count': count_toggle,
-         'out': fixed(sum_out), 'age_range': age_range, 'include_missing': include_missing_values})
+        'include_mean': mean_toggle, 'include_max': max_toggle, 'include_std': std_toggle, 
+        'include_mean_diff': diff_toggle, 'include_count': count_toggle,
+        'out': fixed(sum_out), 'age_range': age_range, 'include_missing': include_missing_values})
 display(ui, sum_out)
 
 

@@ -397,7 +397,7 @@ interact(charts.bmi_with_percentiles, merged_df = fixed(merged_df),
                                                                       max=10000000000,
                                                                       description='Subject ID:',
                                                                       disabled=False
-))
+));
 
 
 # # Summary Statistics
@@ -442,6 +442,7 @@ include_missing_values = widgets.Checkbox(value=False,description='Include Missi
 hbox = widgets.HBox([min_toggle, mean_toggle, max_toggle, std_toggle, count_toggle, diff_toggle])
 ui = widgets.VBox([age_range, hbox, include_missing_values])
 sum_out = widgets.Output()
+sum_out.clear_output()
 widgets.interactive_output(sumstats.bmi_stats, {'merged_df': fixed(merged_df), 'include_min': min_toggle, 
          'include_mean': mean_toggle, 'include_max': max_toggle, 'include_std': std_toggle, 
          'include_mean_diff': diff_toggle, 'include_count': count_toggle,

@@ -115,6 +115,9 @@ def bmi_stats(
     If out is None, it will return a DataFrame. If out is provided, results will be displayed
     in the notebook.
     """
+    # Incoming data is float, not int
+    merged_df["rounded_age"] = merged_df["rounded_age"].astype(int)
+
     if include_missing:
         age_filtered = merged_df[
             (merged_df.rounded_age >= age_range[0])
@@ -169,7 +172,10 @@ def bmi_stats(
     if out == None:
         return merged_stats
     else:
-        out.clear_output()
+        # Clear output on first update and all subsequent updates, see
+        # https://github.com/jupyter-widgets/ipywidgets/issues/3260#issuecomment-907715980
+        # Without out.outputs = (), will append only on first update
+        out.outputs = ()
         out.append_display_data(Markdown("## Female"))
         out.append_display_data(merged_stats.loc["F"].style.format(formatters))
         out.append_display_data(Markdown("## Male"))
