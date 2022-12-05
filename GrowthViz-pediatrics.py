@@ -397,7 +397,7 @@ interact(charts.bmi_with_percentiles, merged_df = fixed(merged_df),
                                                                       max=10000000000,
                                                                       description='Subject ID:',
                                                                       disabled=False
-))
+));
 
 
 # # Summary Statistics

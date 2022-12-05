@@ -5,10 +5,10 @@ import numpy as np
 def setup_percentile_zscore_adults(percentiles_clean):
     """
     Creates mean/sd values to merge to adult data for z-score calculations
-    
+
     Parameters:
     percentiles_clean: (DataFrame) with adult percentiles
-    
+
     Returns:
     Dataframe with mean/sd values
     """
@@ -39,13 +39,13 @@ def setup_percentile_zscore_adults(percentiles_clean):
 def add_mzscored_to_merged_df_adults(merged_df, pctls):
     """
     Merges mean/sd values onto adult data for z-score calculations
-    
+
     Parameters:
     merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
                and sex columns
     pctls: (DataFrame) with mean/sd values for adults
-    
-    Returns: 
+
+    Returns:
     merged Dataframe
     """
     pct_df = pctls.drop(columns={"age"})
@@ -58,15 +58,15 @@ def add_mzscored_to_merged_df_pediatrics(
 ):
     """
     Merges mean/sd values onto pediatrics data for z-score calculations
-    
+
     Parameters:
     merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
                and sex columns
     wt_percentiles: (DataFrame) with weight percentiles
     ht_percentiles: (DataFrame) with height percentiles
     bmi_percentiles: (DataFrame) with bmi percentiles
-    
-    Returns: 
+
+    Returns:
     merged Dataframe
     """
     merged_df = calculate_modified_zscore_pediatrics(
@@ -115,6 +115,9 @@ def bmi_stats(
     If out is None, it will return a DataFrame. If out is provided, results will be displayed
     in the notebook.
     """
+    # Incoming data is float, not int
+    merged_df["rounded_age"] = merged_df["rounded_age"].astype(int)
+
     if include_missing:
         age_filtered = merged_df[
             (merged_df.rounded_age >= age_range[0])
@@ -130,8 +133,6 @@ def bmi_stats(
     age_filtered["sex"] = age_filtered.sex.replace(0, "M").replace(1, "F")
     agg_functions = []
     formatters = {}
-    # if not include_missing:
-    #   age_filtered = age_filtered
     if include_min:
         agg_functions.append("min")
         formatters["min_clean"] = "{:.2f}".format
@@ -170,9 +171,10 @@ def bmi_stats(
     if out == None:
         return merged_stats
     else:
-        with out:
-            clear_output(wait=False)
-        out.clear_output()
+        # Clear output on first update and all subsequent updates, see
+        # https://github.com/jupyter-widgets/ipywidgets/issues/3260#issuecomment-907715980
+        # Without out.outputs = (), will append only on first update
+        out.outputs = ()
         out.append_display_data(Markdown("## Female"))
         out.append_display_data(merged_stats.loc["F"].style.format(formatters))
         out.append_display_data(Markdown("## Male"))
