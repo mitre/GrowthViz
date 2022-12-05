@@ -1,4 +1,4 @@
-ipywidgets
+ipywidgets~=7.0
 matplotlib>=3.3.4
 pandas>=1.2.2
 qgrid>=1.3.1

@@ -133,6 +133,7 @@ def bmi_stats(
     age_filtered["sex"] = age_filtered.sex.replace(0, "M").replace(1, "F")
     agg_functions = []
     formatters = {}
+
     if include_min:
         agg_functions.append("min")
         formatters["min_clean"] = "{:.2f}".format
@@ -198,7 +199,8 @@ def calculate_modified_zscore_pediatrics(merged_df, percentiles, category):
         pct_cpy["M"]
         * np.power((1 + pct_cpy["L"] * pct_cpy["S"] * 2), (1 / pct_cpy["L"]))
     ) - pct_cpy["M"]
-    # Calculate an age in months by rounding and then adding 0.5 to have values that match the growth chart
+    # Calculate an age in months by rounding and then adding 0.5 to have values that match the
+    # growth chart
     merged_df["agemos"] = np.around(merged_df["age"] * 12) + 0.5
     mswpt = merged_df.merge(
         pct_cpy[["Agemos", "M", "Sex", "half_of_two_z_scores"]],

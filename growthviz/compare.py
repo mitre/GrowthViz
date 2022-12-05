@@ -48,8 +48,8 @@ def count_comparison(combined_df):
 
 def subject_comparison_category_counts(combined_df):
     """
-    Provides a DataFrame that counts the number of subjects with at least one measurement in one of the
-    growthcleanr categories, by run.
+    Provides a DataFrame that counts the number of subjects with at least one measurement in one of
+    the growthcleanr categories, by run.
 
     Parameters:
     combined_df: A DataFrame in the format provided by prepare_for_comparison
