@@ -5,7 +5,8 @@ name: Build and publish
 on:
   push:
     branches:
-      - ["main", "v3-dev"]
+      - main
+      - v3-dev
 
 jobs:
   build-and-publish-image:
