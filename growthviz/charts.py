@@ -45,19 +45,20 @@ def weight_distr(df, mode):
     Create charts with overall and outlier weight distributions (included values only)
 
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
-        category, colors, patterns, and sort_order columns
-    mode: (str) indicates how many of the weights you want to use. If set to 'high', the function
-        will only use weights above a certain threshold. Otherwise, it displays all the weights.
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, and
+        include columns
+    mode: (str) indicates how many of the weights you want to use. If set to 'high',
+        the function will only use weights above a certain threshold. Otherwise, it
+        displays all the weights.
     """
-    wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
+    wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] is True)]
     if mode == "high":
         wgt_grp = wgt_grp.loc[wgt_grp["measurement"] >= 135]
         plt.title("Weights At or Above 135kg")
     else:
         plt.title("All Weights")
     if len(wgt_grp.index) == 0:
-        print("No included observations with weight (kg) >= 135")
+        print("No included observations with weight (kg) >= 135.")
         plt.close()
     else:
         round_col = wgt_grp.apply(
@@ -66,7 +67,7 @@ def weight_distr(df, mode):
         wgt_grp = wgt_grp.assign(round_weight=round_col.values)
         wgt_grp_sum = wgt_grp.groupby("round_weight")["subjid"].count().reset_index()
         plt.rcParams["figure.figsize"] = [7, 5]
-        wgt_grp_sum_plot = plt.bar(wgt_grp_sum["round_weight"], wgt_grp_sum["subjid"])
+        plt.bar(wgt_grp_sum["round_weight"], wgt_grp_sum["subjid"])
         # Assure there is some breadth to the x-axis in case of just a few observations
         if wgt_grp["measurement"].max() - wgt_grp["measurement"].min() < 10:
             plt.xlim(wgt_grp["measurement"].min() - 5, wgt_grp["measurement"].max() + 5)
@@ -78,11 +79,12 @@ def weight_distr(df, mode):
 
 def make_age_charts(df, mode):
     """
-    Creates a chart with the age ranges in the dataset. Counts the number of subjids in each range.
+    Creates a chart with the age ranges in the dataset. Counts the number of subjids in
+    each range.
 
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
-        category, colors, patterns, and sort_order columns
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat,
+        include, category, colors, patterns, and sort_order columns
     mode: (str) indicates whether you want the adults or pediatrics values.
     """
     obs_grp = df
@@ -94,8 +96,8 @@ def make_age_charts(df, mode):
     else:
         raise Exception("Valid modes are 'adults' and 'pediatrics'")
 
-    # Adds label, color, pattern and sort order columns to the dataframe based on the age of each
-    # row in the dataframe
+    # Adds label, color, pattern and sort order columns to the dataframe based on the
+    # age of each row in the dataframe
     def add_categories_to_frame(df_data, df_reference):
         categories = []
         colors = []
@@ -119,8 +121,8 @@ def make_age_charts(df, mode):
     # Call the categorizing function on the data
     obs_grp = add_categories_to_frame(obs_grp, label_frame)
 
-    # Groups the new dataframe by category, sort order, colors and patterns. It then counts the
-    # number of subject ids in each group and sorts the values by sort order.
+    # Groups the new dataframe by category, sort order, colors and patterns. It then
+    # counts the number of subject ids in each group and sorts the values by sort order.
     obs_grp = (
         obs_grp.groupby(["category", "sort_order", "colors", "patterns"])["subjid"]
         .count()
@@ -214,14 +216,14 @@ def overlap_view_adults(
     xmin = math.floor(individual.age.min())
     xmax = math.ceil(individual.age.max())
     selected_param_plot.set_xlim(xmin, xmax)
-    if include_carry_forward == True:
+    if include_carry_forward is True:
         carry_forward = selected_param[
             selected_param.clean_value == "Exclude-Carried-Forward"
         ]
         selected_param_plot.scatter(
             x=carry_forward.age, y=carry_forward.measurement, c="c", marker="^"
         )
-    if include_percentiles == True:
+    if include_percentiles is True:
         if param == "WEIGHTKG":
             percentile_df = wt_df
         elif param == "BMI":
@@ -287,7 +289,7 @@ def overlap_view_adults_show(
     """
     Wraps overlap_view_adult with plt.show().
     """
-    plot = overlap_view_adults(
+    overlap_view_adults(
         obs_df,
         subjid,
         param,
@@ -345,14 +347,14 @@ def overlap_view_pediatrics(
         c="r",
         marker="x",
     )
-    if include_carry_forward == True:
+    if include_carry_forward is True:
         carry_forward = selected_param[
             selected_param.clean_value == "Exclude-Carried-Forward"
         ]
         selected_param_plot.scatter(
             x=carry_forward.age, y=carry_forward.measurement, c="c", marker="^"
         )
-    if include_percentiles == True:
+    if include_percentiles is True:
         percentile_df = wt_df if param == "WEIGHTKG" else ht_df
         percentile_window = percentile_df.loc[
             (percentile_df.Sex == individual.sex.min())
@@ -374,7 +376,7 @@ def overlap_view_pediatrics_show(
     """
     Wraps overlap_view_pediatrics with plt.show().
     """
-    plot = overlap_view_pediatrics(
+    overlap_view_pediatrics(
         obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df
     )
     plt.show()
@@ -442,7 +444,7 @@ def overlap_view_double_pediatrics(
     ax2.set_ylabel(
         "weight (kg)", color=color_secondary
     )  # we already handled the x-label with ax1
-    if include_percentiles == True:
+    if include_percentiles is True:
         percentile_window = wt_df.loc[wt_df.Sex == individual.sex.min()]
         ax2.plot(percentile_window.age, percentile_window.P5, color="lightblue")
         ax2.plot(
@@ -476,13 +478,13 @@ def overlap_view_double_pediatrics(
         )
         ax1.plot(percentile_window_ht.age, percentile_window_ht.P95, color="pink")
 
-    if show_all_measurements == True:
+    if show_all_measurements is True:
         ax1.plot(height["age"], height["measurement"], color=color, label="stature")
         ax2.plot(
             weight["age"], weight["measurement"], color=color_secondary, label="weight"
         )
 
-    if show_excluded_values == True:
+    if show_excluded_values is True:
         ax1.scatter(
             excluded_height.age, excluded_height.measurement, c="black", marker="x"
         )
@@ -490,7 +492,7 @@ def overlap_view_double_pediatrics(
             excluded_weight.age, excluded_weight.measurement, c="black", marker="x"
         )
 
-    if show_trajectory_with_exclusions == True:
+    if show_trajectory_with_exclusions is True:
         ax1.plot(
             included_height["age"],
             included_height["measurement"],
@@ -509,7 +511,7 @@ def overlap_view_double_pediatrics(
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
 
-    if include_carry_forward == True:
+    if include_carry_forward is True:
         carry_forward_height = height[height.clean_value == "Exclude-Carried-Forward"]
         carry_forward_weight = weight[weight.clean_value == "Exclude-Carried-Forward"]
         ax1.scatter(
@@ -594,7 +596,7 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
         for x in range(nrows):
             try:
                 subjid = subjids[x * 5 + y]
-            except IndexError as ie:
+            except IndexError:
                 # No more subjects to render
                 break
             individual = obs_df[obs_df.subjid == subjid]
@@ -758,15 +760,15 @@ def top_ten(
     in the notebook.
     """
     working_set = merged_df
-    if age != None:
+    if age is not None:
         working_set = working_set.loc[
             working_set.rounded_age.ge(age[0]) & working_set.rounded_age.le(age[1])
         ]
-    if sex != None:
+    if sex is not None:
         working_set = working_set[working_set.sex == sex]
-    if wexclusion != None:
+    if wexclusion is not None:
         working_set = working_set[working_set.weight_cat.isin(wexclusion)]
-    if hexclusion != None:
+    if hexclusion is not None:
         working_set = working_set[working_set.height_cat.isin(hexclusion)]
     # if order == 'largest':
     #   working_set = working_set.nlargest(10, field)
@@ -796,7 +798,7 @@ def top_ten(
             "BMIz",
         ]
     ]
-    if out == None:
+    if out is None:
         return working_set
     else:
         out.clear_output()

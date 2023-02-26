@@ -1,8 +1,6 @@
-from IPython.display import FileLinks
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from IPython.display import FileLinks
 
 
 def setup_individual_obs_df(obs_df):
@@ -10,7 +8,8 @@ def setup_individual_obs_df(obs_df):
     Standardizes adults and pediatrics files for clean processing in GrowthViz notebooks
 
     Parameters:
-    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value
+        columns
 
     Returns:
     DataFrame with updated columns
@@ -135,16 +134,23 @@ def setup_percentiles_pediatrics(percentiles_file):
 
 def keep_age_range(df, mode):
     """
-    Returns specified age range
+    Returns specified age range, removing extraneous columns as well
 
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
-        category, colors, patterns, and sort_order columns
-    mode: (str) indicates whether you want the "adults" (18-80) or "pediatrics" (0-25) values
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, and
+        include columns
+    mode: (str) indicates whether you want the "adults" (18-80) or "pediatrics" (0-25)
+        values
 
     Returns:
     DataFrame with filtered ages, unchanged if invalid mode is specified
     """
+    # Note: this is a side effect; just the simplest place to remove these
+    cols_to_drop = []
+    for extra_col in ["clean_cat", "category", "colors", "patterns", "sort_order"]:
+        if extra_col in df.columns:
+            cols_to_drop.append(extra_col)
+    df = df.drop(columns=cols_to_drop)
     if mode == "adults":
         return df[df["age"].between(18, 80, inclusive="both")]
     elif mode == "pediatrics":
@@ -158,7 +164,8 @@ def setup_merged_df(obs_df):
     Merges together weight and height data for calculating BMI
 
     Parameters:
-    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value
+        columns
 
     Returns:
     DataFrame with merged data
@@ -206,7 +213,8 @@ def setup_merged_df(obs_df):
 
 def exclusion_information(obs):
     """
-    Provides a count and percentage of growthcleanr categories by measurement type (param).
+    Provides a count and percentage of growthcleanr categories by measurement type
+    (param).
 
     Parameters:
     obs: a DataFrame, in the format output by setup_individual_obs_df
@@ -238,7 +246,8 @@ def exclusion_information(obs):
 
 def label_incl(row):
     """
-    Categorizes BMI calculations as Include, Implausible, or unable to calculate (Only Wt or Ht)
+    Categorizes BMI calculations as Include, Implausible, or unable to calculate (Only
+    Wt or Ht)
 
     Parameters:
     row: (Series) dataframe row
@@ -246,7 +255,7 @@ def label_incl(row):
     Returns:
     Category (str) for BMI calculation
     """
-    if row["include_both"] == True:
+    if row["include_both"] is True:
         return "Include"
     elif (row["weight_cat"] == "Implausible") | (row["height_cat"] == "Implausible"):
         return "Implausible"
@@ -261,8 +270,8 @@ def setup_bmi_adults(merged_df, obs):
     Parameters:
     merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
                and sex columns
-    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
-        category, colors, patterns, and sort_order columns
+    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat,
+        include, category, colors, patterns, and sort_order columns
 
     Returns:
     DataFrame with appended values
@@ -324,15 +333,17 @@ def export_to_csv(da_locals, selection_widget, out):
 
 def clean_swapped_values(merged_df):
     """
-    This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-    "Swapped-Measurements" (or the adult equivalent). It will then swap the height and weight values
-    for those rows, and recalculate BMIs based on these changes. It will also create two new columns:
-    postprocess_height_cat and postprocess_weight_cat. The values for these columns are copied from
-    the original categories except in the case where swaps are fixed when it is set to
+    This function will look in a DataFrame for rows where the height_cat and weight_cat
+    are set to "Swapped-Measurements" (or the adult equivalent). It will then swap the
+    height and weight values for those rows, and recalculate BMIs based on these
+    changes.  It will also create two new columns: postprocess_height_cat and
+    postprocess_weight_cat. The values for these columns are copied from the original
+    categories except in the case where swaps are fixed when it is set to
     "Include-Fixed-Swap".
 
     Parameters:
-    merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+    merged_df: (DataFrame) with subjid, height, weight, include_height and
+        include_weight columns
 
     Returns:
     The cleaned DataFrame
@@ -368,20 +379,21 @@ def clean_swapped_values(merged_df):
 
 def clean_unit_errors(merged_df):
     """
-    This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-    "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight
-    values to convert them.  It will also create two new columns: postprocess_height_cat and
-    postprocess_weight_cat.  The values for these columns are copied from the original categories
-    except in the case where unit errors are fixed when it is set to "Include-UH" or "Include-UL"
-    respectively.
+    This function will look in a DataFrame for rows where the height_cat and weight_cat
+    are set to "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide
+    the height and weight values to convert them.  It will also create two new columns:
+    postprocess_height_cat and postprocess_weight_cat.  The values for these columns
+    are copied from the original categories except in the case where unit errors are
+    fixed when it is set to "Include-UH" or "Include-UL" respectively.
 
-    At present, the adult algorithm does not specify high or low unit errors, rather it only flags
-    "Exclude-Adult-Unit-Errors", so this function only works with pediatrics data. If growthcleanr
-    adds high and low designations for adult unit errors, a comparable set of conditions could be
-    added here to accommodate adult data.
+    At present, the adult algorithm does not specify high or low unit errors, rather it
+    only flags "Exclude-Adult-Unit-Errors", so this function only works with pediatrics
+    data. If growthcleanr adds high and low designations for adult unit errors, a
+    comparable set of conditions could be added here to accommodate adult data.
 
     Parameters:
-    merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+    merged_df: (DataFrame) with subjid, height, weight, include_height and
+        include_weight columns
 
     Returns:
     The cleaned DataFrame

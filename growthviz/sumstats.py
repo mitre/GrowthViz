@@ -1,5 +1,5 @@
-from IPython.display import Markdown
 import numpy as np
+from IPython.display import Markdown
 
 
 def setup_percentile_zscore_adults(percentiles_clean):
@@ -169,7 +169,7 @@ def bmi_stats(
         merged_stats = merged_stats.rename(
             columns={"std_raw": "sd_raw", "std_clean": "sd_clean"}
         )
-    if out == None:
+    if out is None:
         return merged_stats
     else:
         # Clear output on first update and all subsequent updates, see
