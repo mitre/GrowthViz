@@ -57,10 +57,8 @@ class DataTestCase:
                     "subjid",
                     "age",
                     "sex",
-                    "height_cat",
                     "include_height",
                     "height",
-                    "weight_cat",
                     "include_weight",
                     "weight",
                     "bmi",
@@ -98,7 +96,7 @@ class PctAdultTestCase(unittest.TestCase):
 
     def test_setup_percentiles_adults(self):
         setup_df = processdata.setup_percentiles_adults(self.df)
-        self.assertTrue(setup_df["age"].between(18, 110, inclusive=True).all())
+        self.assertTrue(setup_df["age"].between(18, 110, inclusive="both").all())
         self.assertEqual(0, setup_df["sd"].isnull().sum())
         self.assertEqual(0, setup_df["P5"].isnull().sum())
         self.assertEqual(0, setup_df["P95"].isnull().sum())
@@ -111,5 +109,5 @@ class PctPedBMITestCase(unittest.TestCase):
     def test_setup_percentiles_peds_bmi(self):
         for fn in self.fns:
             setup_df = processdata.setup_percentiles_pediatrics(fn)
-            self.assertTrue(setup_df["age"].between(2, 20.1, inclusive=True).all())
+            self.assertTrue(setup_df["age"].between(2, 20.1, inclusive="both").all())
             self.assertEqual(setup_df["P50"].all(), setup_df["M"].all())
