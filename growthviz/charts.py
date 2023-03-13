@@ -460,7 +460,8 @@ def overlap_view_double_pediatrics(
     color_secondary = "tab:blue"
 
     # Allow zooming in a bit if this is a young subject
-    if (maxage := individual["ageyears"].max()) < 10:
+    maxage = individual["ageyears"].max()
+    if maxage < 10:
         ax1_xlim = [0, maxage * 1.1]
         # Find stature at P95 for maxage
         pct_max = round(
