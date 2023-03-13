@@ -6,7 +6,6 @@ from growthviz import processdata
 
 
 class DataTestCase:
-
     SAMPLE_DATA = "path/to/sample/data.csv"
     MODE = "adults or pediatrics"
 
@@ -22,7 +21,8 @@ class DataTestCase:
                     "subjid",
                     "param",
                     "measurement",
-                    "age",
+                    "agedays",
+                    "ageyears",
                     "sex",
                     "clean_value",
                     "clean_cat",
@@ -45,7 +45,7 @@ class DataTestCase:
 
     def test_no_nans(self):
         merge_df = self.setup_keep_merge(self.df)
-        self.assertEqual(0, merge_df["age"].isnull().sum())
+        self.assertEqual(0, merge_df["ageyears"].isnull().sum())
         self.assertEqual(0, merge_df["sex"].isnull().sum())
 
     def test_cols(self):
@@ -55,12 +55,15 @@ class DataTestCase:
                 [
                     "id",
                     "subjid",
-                    "age",
+                    "agedays",
+                    "ageyears",
                     "sex",
                     "include_height",
                     "height",
+                    "height_cat",
                     "include_weight",
                     "weight",
+                    "weight_cat",
                     "bmi",
                     "include_both",
                     "rounded_age",
@@ -75,13 +78,11 @@ class DataTestCase:
 
 
 class AdultDataTestCase(DataTestCase, unittest.TestCase):
-
     SAMPLE_DATA = "growthviz-data/sample-adults-data.csv"
     MODE = "adults"
 
 
 class PediatricDataTestCase(DataTestCase, unittest.TestCase):
-
     SAMPLE_DATA = "growthviz-data/sample-pediatrics-data.csv"
     MODE = "pediatrics"
 
@@ -111,3 +112,9 @@ class PctPedBMITestCase(unittest.TestCase):
             setup_df = processdata.setup_percentiles_pediatrics(fn)
             self.assertTrue(setup_df["age"].between(2, 20.1, inclusive="both").all())
             self.assertEqual(setup_df["P50"].all(), setup_df["M"].all())
+
+    def test_setup_percentiles_peds_ht_wt(self):
+        df_percentiles = processdata.setup_percentiles_pediatrics_new()
+        df_ht, df_wt, _ = processdata.split_percentiles_pediatrics(df_percentiles)
+        self.assertTrue(df_ht["age"].between(0, 21.1, inclusive="both").all())
+        self.assertTrue(df_wt["age"].between(0, 21.1, inclusive="both").all())

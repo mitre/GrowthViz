@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 from IPython.display import FileLinks
 
 
@@ -16,17 +19,17 @@ def setup_individual_obs_df(obs_df):
     """
     df = obs_df.copy()
     df.rename(columns={"clean_res": "clean_value"}, inplace=True)
-    df["age"] = df["agedays"] / 365.25
-    df.drop(columns=["agedays"], inplace=True)
+    df["ageyears"] = df["agedays"] / 365.25
     df["clean_cat"] = df["clean_value"].astype("category")
     df["include"] = df.clean_value.eq("Include")
     col_list = [
         "id",
         "subjid",
+        "agedays",
+        "ageyears",
+        "sex",
         "param",
         "measurement",
-        "age",
-        "sex",
         "clean_value",
         "clean_cat",
         "include",
@@ -101,6 +104,96 @@ def setup_percentiles_adults(percentiles):
     return dta
 
 
+def setup_percentiles_pediatrics_new():
+    """
+    Process pediatrics growth data and return one big DataFrames with each of
+    height, weight, and BMI percentiles as well as weighting values to support
+    smoothing z scores for pediatric subjects between 2-4.
+
+    Returns:
+    Combined DataFrame with all (BMI, height, weight) percentiles and weighting
+        values
+    """
+    df_cdc = pd.read_csv(Path("growthviz-data/ext/growthfile_cdc_ext.csv.gz"))
+    df_who = pd.read_csv(Path("growthviz-data/ext/growthfile_who.csv.gz"))
+    df = df_cdc.merge(df_who, on=["agedays", "sex"], how="left")
+
+    # Add weighting columns to support smoothing between 2-4yo
+    df = df.assign(ageyears=lambda r: (r["agedays"] / 365.25))
+    df["cdcweight"] = 0
+    df.loc[df["ageyears"].between(2, 4, inclusive="left"), "cdcweight"] = (
+        df["ageyears"] - 2
+    )
+    df["whoweight"] = 0
+    df.loc[df["ageyears"].between(2, 4, inclusive="left"), "whoweight"] = (
+        4 - df["ageyears"]
+    )
+
+    PERCENTILES = [0.03, 0.05, 0.10, 0.25, 0.50, 0.75, 0.85, 0.90, 0.95, 0.97]
+
+    # Compute percentiles for the full set of vars
+    for s in ["who", "cdc"]:
+        pvars = ["ht", "wt"]
+        if s == "cdc":
+            pvars.append("bmi")
+        for p in pvars:
+            for pct in PERCENTILES:
+                lvar = f"{s}_{p}_l"
+                mvar = f"{s}_{p}_m"
+                svar = f"{s}_{p}_s"
+                tvar = f"{s}_{p}_p{int(pct * 100)}"
+                df.loc[df[lvar] == 0, tvar] = df[mvar] * (df[svar] ** norm.ppf(pct))
+                df.loc[df[lvar] != 0, tvar] = df[mvar] * (
+                    1 + (df[lvar] * df[svar] * norm.ppf(pct))
+                ) ** (1 / df[lvar])
+
+    # Add smoothed percentiles
+    for p in ["ht", "wt"]:
+        for pct in PERCENTILES:
+            cdc_var = f"cdc_{p}_p{int(pct * 100)}"
+            who_var = f"who_{p}_p{int(pct * 100)}"
+            s_var = f"s_{p}_p{int(pct * 100)}"
+            df.loc[df["ageyears"] <= 2, s_var] = df[who_var]
+            df.loc[df["ageyears"].between(2, 4, inclusive="neither"), s_var] = (
+                (df[who_var] * df["whoweight"]) + (df[cdc_var] * df["cdcweight"])
+            ) / 2
+            df.loc[df["ageyears"] >= 4, s_var] = df[cdc_var]
+
+    return df
+
+
+def split_percentiles_pediatrics(df):
+    """
+    Return (height, weight, BMI) percentile DataFrames, with column names
+    aligned to chart var names.
+
+    Parameters:
+    DataFrame produced by setup_percentiles_pediatrics_new()
+
+    Returns:
+    Tuple of (height, weight, BMI) percentile DataFrames with columns renamed
+    """
+    df.rename(columns={"ageyears": "age", "sex": "Sex"}, inplace=True)
+    cols = ["Sex", "agedays", "age"]
+
+    ht_cols = cols.copy()
+    ht_cols.extend([col for col in df.columns if "s_ht_p" in col])
+    df_ht = df[ht_cols]
+    df_ht.columns = [c.replace("s_ht_p", "P") for c in df_ht]
+
+    wt_cols = cols.copy()
+    wt_cols.extend([col for col in df.columns if "s_wt_p" in col])
+    df_wt = df[wt_cols]
+    df_wt.columns = [c.replace("s_wt_p", "P") for c in df_wt]
+
+    bmi_cols = cols.copy()
+    bmi_cols.extend([col for col in df.columns if "s_bmi_p" in col])
+    df_bmi = df[bmi_cols]
+    df_bmi.columns = [c.replace("s_bmi_p", "P") for c in df_bmi]
+
+    return (df_ht, df_wt, df_bmi)
+
+
 def setup_percentiles_pediatrics(percentiles_file):
     """
     Processes pediatrics percentiles from CDC
@@ -134,11 +227,11 @@ def setup_percentiles_pediatrics(percentiles_file):
 
 def keep_age_range(df, mode):
     """
-    Returns specified age range, removing extraneous columns as well
+    Returns specified range of ages in years, removing extraneous columns as well
 
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, and
-        include columns
+    df: (DataFrame) with subjid, param, measurement, ageyears, agedays, sex,
+        clean_value, and include columns
     mode: (str) indicates whether you want the "adults" (18-80) or "pediatrics" (0-25)
         values
 
@@ -147,14 +240,14 @@ def keep_age_range(df, mode):
     """
     # Note: this is a side effect; just the simplest place to remove these
     cols_to_drop = []
-    for extra_col in ["clean_cat", "category", "colors", "patterns", "sort_order"]:
+    for extra_col in ["category", "colors", "patterns", "sort_order"]:
         if extra_col in df.columns:
             cols_to_drop.append(extra_col)
     df = df.drop(columns=cols_to_drop)
     if mode == "adults":
-        return df[df["age"].between(18, 80, inclusive="both")]
+        return df[df["ageyears"].between(18, 80, inclusive="both")]
     elif mode == "pediatrics":
-        return df[df["age"].between(0, 25, inclusive="both")]
+        return df[df["ageyears"].between(0, 25, inclusive="both")]
     else:
         return df
 
@@ -164,8 +257,8 @@ def setup_merged_df(obs_df):
     Merges together weight and height data for calculating BMI
 
     Parameters:
-    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value
-        columns
+    obs_df: (DataFrame) with subjid, sex, agedays, ageyears, measurement, param and
+        clean_value columns
 
     Returns:
     DataFrame with merged data
@@ -175,7 +268,9 @@ def setup_merged_df(obs_df):
     obs_df.loc[obs_df.param == "HEIGHTCM", "weight"] = np.NaN
     heights = obs_df[obs_df.param == "HEIGHTCM"]
     weights = obs_df[obs_df.param == "WEIGHTKG"]
-    merged = heights.merge(weights, on=["subjid", "age", "sex"], how="outer")
+    merged = heights.merge(
+        weights, on=["subjid", "agedays", "ageyears", "sex"], how="outer"
+    )
     only_needed_columns = merged.drop(
         columns=[
             "param_x",
@@ -204,7 +299,7 @@ def setup_merged_df(obs_df):
     clean_column_names["bmi"] = clean_column_names["weight"] / (
         (clean_column_names["height"] / 100) ** 2
     )
-    clean_column_names["rounded_age"] = np.around(clean_column_names.age)
+    clean_column_names["rounded_age"] = np.around(clean_column_names.ageyears)
     clean_column_names["include_both"] = (
         clean_column_names["include_height"] & clean_column_names["include_weight"]
     )
@@ -281,7 +376,7 @@ def setup_bmi_adults(merged_df, obs):
             "id",
             "subjid",
             "sex",
-            "age",
+            "ageyears",
             "rounded_age",
             "bmi",
             "weight_cat",
