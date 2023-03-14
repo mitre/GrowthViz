@@ -106,7 +106,7 @@ from growthviz import sumstats
 cleaned_obs = pd.read_csv("growthviz-data/sample-pediatrics-data.csv")
 
 
-# The following cell shows what the first five rows look like in the CSV file
+# The following cell shows what the first five rows look like in the CSV file.
 
 # In[ ]:
 
@@ -159,12 +159,6 @@ charts.make_age_charts(obs_full, 'pediatrics')
 obs = processdata.keep_age_range(obs_full, 'pediatrics')
 
 
-# In[ ]:
-
-
-obs.head()
-
-
 # After that, `charts.weight_distr` creates two visualizations. The first shows a distribution of all of the included weights in the dataset. The second shows weights above a certain threshold to see whether there are spikes at a certain *Included* weights that might indicate that a commonly used scale maxes out at a certain value. This chart is restricted to values of 135kg or higher (rounded to the nearest KG) to make patterns in higher weights easier to identify. This potential issue is important to keep in mind when conducting an analysis.
 
 # In[ ]:
@@ -179,14 +173,26 @@ charts.weight_distr(obs, 'all')
 charts.weight_distr(obs, 'high')
 
 
-# The following cell loads in the [CDC Growth Chart Percentile Data Files](https://www.cdc.gov/growthcharts/percentile_data_files.htm). Functions coerce some values into numeric types. It also add an `age` column which is a decimal value representing age in years. Finally, `Sex` is transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). This data is used to plot percentile bands in visualizations in the tool. 
+# The following cells load in height, weight, and BMI percentiles [WHO and CDC Growth Chart Percentile Data Files](https://www.cdc.gov/growthcharts/who_charts.htm). Functions coerce some values into numeric types. It also adds a `ageyears` column representing age in years. Finally, `Sex` is transformed so that the values align with the values used in growthcleanr, 0 (male) or 1 (female). This data is used to plot percentile bands in visualizations in the tool.
+# 
+# For ages 2-4, a smoothing function is used to transition from WHO to CDC height percentiles. This smoothing addresses the focus of WHO on younger subjects and the transition from length as a stature measure in infants to height in older children.
 
 # In[ ]:
 
 
-bmi_percentiles = processdata.setup_percentiles_pediatrics("bmiagerev.csv")
-wt_percentiles = processdata.setup_percentiles_pediatrics("wtage.csv")
-ht_percentiles = processdata.setup_percentiles_pediatrics("statage.csv")
+df_percentiles = processdata.setup_percentiles_pediatrics_new()
+
+
+# In[ ]:
+
+
+df_ht_percentiles, df_wt_percentiles, _ = processdata.split_percentiles_pediatrics(df_percentiles)
+
+
+# In[ ]:
+
+
+df_bmi_percentiles = processdata.setup_percentiles_pediatrics("bmiagerev.csv")
 
 
 # In a previous cell, the tool creates the `obs` DataFrame. In that structure there is one measurement, either height or weight, per row. In this cell, the `processdata.setup_merged_df` function will create a DataFrame where a height observation and weight observation for the same `subjid` on the same `agedays` are combined into a single row. Several new columns are added to the resulting DataFrame:
@@ -228,14 +234,15 @@ processdata.exclusion_information(obs)
 # In[ ]:
 
 
-mdf = sumstats.add_mzscored_to_merged_df_pediatrics(merged_df, wt_percentiles, ht_percentiles, bmi_percentiles)
+mdf = sumstats.add_smoothed_zscore_to_merged_df_pediatrics(merged_df.copy(), df_percentiles)
+
 col_opt = {
     'width': 20,
 }
 col_def = {
     'subjid': { 'width': 80 },
     'sex': { 'width': 30 },
-    'age': { 'width': 30 },
+    'ageyears': { 'width': 30 },
     'height': { 'width': 50 },
     'height_cat': { 'width': 80 },
     'htz': { 'width': 50 },
@@ -243,9 +250,10 @@ col_def = {
     'weight_cat': { 'width': 80 },
     'wtz': { 'width': 50 },
     'bmi': { 'width': 40 },
-    'BMIz': { 'width': 30 },
+    'bmiz': { 'width': 30 },
 }
-g = qgrid.show_grid(charts.top_ten(mdf, 'weight'), precision=3, column_options=col_opt, column_definitions=col_def)
+g = qgrid.show_grid(charts.top_ten(mdf, 'weight'), precision=3, column_options=col_opt, 
+                    column_definitions=col_def)
 ind_out = widgets.Output()
 def handle_selection_change(_event, _widget):
     df = g.get_changed_df()
@@ -260,7 +268,8 @@ def handle_selection_change(_event, _widget):
         with ind_out:
             if currSubj != lastSubj:
                 ind_out.clear_output()
-                charts.overlap_view_pediatrics(obs, subjid, 'WEIGHTKG', True, True, wt_percentiles, ht_percentiles)
+                charts.overlap_view_pediatrics(obs, subjid, 'WEIGHTKG', True, True, 
+                                               df_wt_percentiles, df_ht_percentiles)
                 display(plt.show())
 g.on('selection_changed', handle_selection_change)    
 widgets.VBox([g, ind_out])
@@ -283,19 +292,24 @@ all_ids = obs['subjid'].unique()
 val = 5450 if 5450 in all_ids else np.random.choice(all_ids, size=1, replace=False)
 interactive(charts.overlap_view_pediatrics_show, 
             obs_df=fixed(obs), 
-            subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False), 
+            subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', 
+                                    disabled=False), 
             param=['HEIGHTCM', 'WEIGHTKG'], 
-            include_carry_forward=widgets.Checkbox(value=True,description='Include Carry Forward',disabled=False,indent=False), 
-            include_percentiles=widgets.Checkbox(value=True,description='Include Measurement Percentile Bands',disabled=False,indent=False),
-            wt_df=fixed(wt_percentiles), 
-            ht_df=fixed(ht_percentiles), 
-            bmi_df=fixed(bmi_percentiles)
+            include_carry_forward=widgets.Checkbox(value=True, description='Include Carry Forward', 
+                                                   disabled=False, indent=False), 
+            include_percentiles=widgets.Checkbox(value=True, 
+                                                 description='Include Measurement Percentile Bands', 
+                                                 disabled=False, indent=False),
+            wt_df=fixed(df_wt_percentiles),
+            ht_df=fixed(df_ht_percentiles)
            )
 
 
 # The cell below also creates a plot for an individual modeled after the [CDC paper growth charts](https://www.cdc.gov/growthcharts/data/set1clinical/cj41c021.pdf). It shows both the weight trajectory and height trajectory. The lighter bands in the diagram background represent the 5th through 95th percentile values for age and sex for the given measurement type.
 # 
 # In this chart, the dark blue line represents all weight measurements for an individual and the dark red represents all height measurements for an individual. Any values marked for exclusion are represented with a black x. The yellow dashed line represents the trajectory with exclusions removed. Any carried forward values are represented by a blue triangle. All lines and symbols can be excluded by unchecking the checkboxes above the chart.
+# 
+# The slight shift in the red height percentile lines at age 2 results from the smoothing function which uses a weighted combination of WHO and CDC percentiles between 2-4 years of age, and acknowledging the shift from using length to standing height for the measurement at that age. This may appear more pronounced when the chart scale is adjusted to show measurements for a young subject.
 
 # In[ ]:
 
@@ -310,7 +324,7 @@ interactive(charts.overlap_view_double_pediatrics,
             show_trajectory_with_exclusions=widgets.Checkbox(value=True,description='Show Trajectory with Exclusions',disabled=False,indent=False),
             include_carry_forward=widgets.Checkbox(value=True,description='Include Carry Forward',disabled=False,indent=False), 
             include_percentiles=widgets.Checkbox(value=True,description='Include Measurement Percentile Bands',disabled=False,indent=False),
-            wt_df=fixed(wt_percentiles), ht_df=fixed(ht_percentiles))
+            wt_df=fixed(df_wt_percentiles), ht_df=fixed(df_ht_percentiles))
 
 
 # # Visualizing Multiple Trajectories at Once
@@ -343,7 +357,8 @@ sample
 # In[ ]:
 
 
-charts.five_by_five_view(obs, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
+charts.five_by_five_view(obs, sample, 'HEIGHTCM', df_wt_percentiles, 
+                         df_ht_percentiles, df_bmi_percentiles, 'solid')
 
 
 # # Building a Different Sample
@@ -355,10 +370,14 @@ charts.five_by_five_view(obs, sample, 'HEIGHTCM', wt_percentiles, ht_percentiles
 # In[ ]:
 
 
-top_weight_extreme_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-EWMA-Extreme'].sort_values('weight', ascending=False).head(50)['subjid'].unique()
+top_weight_extreme_ewma_ids = merged_df[merged_df.weight_cat == 'Exclude-EWMA-Extreme'] \
+    .sort_values('weight', ascending=False) \
+    .head(50)['subjid'].unique()
 if len(top_weight_extreme_ewma_ids) >= 1:
-    ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, size=len(top_weight_extreme_ewma_ids), replace=False)
-    charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
+    ewma_sample = np.random.choice(top_weight_extreme_ewma_ids, 
+                                   size=len(top_weight_extreme_ewma_ids), replace=False)
+    charts.five_by_five_view(obs, ewma_sample, 'WEIGHTKG', df_wt_percentiles,
+                             df_ht_percentiles, df_bmi_percentiles, 'solid')
 
 
 # ## Visualizing the Top/Bottom 25 for a Given Category
@@ -374,16 +393,20 @@ def edge25(obs, category, sort_order, param):
         filtered_by_cat = filtered_by_cat.nlargest(25, 'measurement')
     else:
         filtered_by_cat = filtered_by_cat.nsmallest(25, 'measurement')
-    fig = charts.five_by_five_view(obs, filtered_by_cat.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'solid')
+    fig = charts.five_by_five_view(obs, filtered_by_cat.subjid.values, param, 
+                                   df_wt_percentiles, df_ht_percentiles, df_bmi_percentiles,
+                                   'solid')
     plt.show()
     
 interact(edge25, obs = fixed(obs), category = obs.clean_cat.unique(), 
-         sort_order = ['largest', 'smallest'], param = ['WEIGHTKG', 'HEIGHTCM'])
+         sort_order = ['largest', 'smallest'], param = ['WEIGHTKG', 'HEIGHTCM']);
 
 
 # # Visualizing Changes in Trajectory
 # 
 # The `charts.bmi_with_percentiles` function displays a chart showing BMI for an individual over time. Black bands representing the 5th and 95th BMI percentile for age and sex are shown with the individual's BMI shown in blue. The plot on the left represents all values. The plot on the right is only included values.
+# 
+# BMI percentile values are not included for subjects younger than two years old.
 
 # In[ ]:
 
@@ -391,7 +414,7 @@ interact(edge25, obs = fixed(obs), category = obs.clean_cat.unique(),
 all_ids = obs['subjid'].unique()
 val = 46717134 if 46717134 in all_ids else np.random.choice(all_ids, size=1, replace=False)
 interact(charts.bmi_with_percentiles, merged_df = fixed(merged_df), 
-                                      bmi_percentiles = fixed(bmi_percentiles),
+                                      bmi_percentiles = fixed(df_bmi_percentiles),
                                       subjid = widgets.BoundedIntText(value=val,
                                                                       min=0,
                                                                       max=10000000000,
@@ -459,9 +482,10 @@ display(ui, sum_out)
 # | cleaned_obs | Original growthcleanr output read in from csv file |
 # | obs_full | Slightly modified version of `cleaned_obs` in format needed for use in notebook |
 # | obs | Patient observations within age range allowed for this notebook (18-80) |
-# | bmi_percentiles | BMI percentiles data for use in charts |
-# | wt_percentiles | Weight percentiles data for use in charts |
-# | ht_percentiles | Height percentiles data for use in charts |
+# | df_percentiles | Combined measure percentiles data for use in charts, split into three below |
+# | df_ht_percentiles | Height-specific percentiles data for use in charts |
+# | df_wt_percentiels | Weight-specific percentiles data for use in charts |
+# | df_bmi_percentiles | BMI-specific percentiles data for use in charts |
 # | merged_df | Data by subject and age that contains height, weight, and BMI on one row |
 # | mdf | Version of `merged_df` with added z-scores |
 
@@ -572,7 +596,7 @@ compare.subject_comparison_percentage(combined)
 # In[ ]:
 
 
-combined['rounded_age'] = np.around(combined.age).astype(int)
+combined['rounded_age'] = np.around(combined.ageyears).astype(int)
 
 
 # In[ ]:
@@ -585,7 +609,7 @@ count_by_age = combined.groupby(['run_name', 'clean_value', 'rounded_age']).agg(
 
 
 p = sns.catplot(x='rounded_age', y='id', col='clean_value', data=count_by_age[count_by_age.clean_value != 'Include'], hue='run_name', col_wrap=3, kind="bar")
-p
+p;
 
 
 # In[ ]:

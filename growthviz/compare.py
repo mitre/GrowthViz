@@ -130,7 +130,7 @@ def subject_stats_comparison(combined_df):
     for rn in combined_df.run_name.unique():
         total_subjects = combined_df[combined_df.run_name == rn].subjid.nunique()
         only_exclusions = combined_df[
-            (combined_df.run_name == rn) & (combined_df.include == False)
+            (combined_df.run_name == rn) & (combined_df.include is False)
         ]
         percent_with_exclusion = (
             only_exclusions.subjid.nunique() / total_subjects

@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from .processdata import split_percentiles_pediatrics
+
+
 ADULTS_AGE_RANGES = pd.DataFrame(
     {
         "min": np.array([0, 18, 30, 40, 50, 60, 65, 80]),
@@ -45,19 +48,20 @@ def weight_distr(df, mode):
     Create charts with overall and outlier weight distributions (included values only)
 
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
-        category, colors, patterns, and sort_order columns
-    mode: (str) indicates how many of the weights you want to use. If set to 'high', the function
-        will only use weights above a certain threshold. Otherwise, it displays all the weights.
+    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, and
+        include columns
+    mode: (str) indicates how many of the weights you want to use. If set to 'high',
+        the function will only use weights above a certain threshold. Otherwise, it
+        displays all the weights.
     """
-    wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] == True)]
+    wgt_grp = df[(df["param"] == "WEIGHTKG") & (df["include"] is True)]
     if mode == "high":
         wgt_grp = wgt_grp.loc[wgt_grp["measurement"] >= 135]
         plt.title("Weights At or Above 135kg")
     else:
         plt.title("All Weights")
     if len(wgt_grp.index) == 0:
-        print("No included observations with weight (kg) >= 135")
+        print("No included observations with weight (kg) >= 135.")
         plt.close()
     else:
         round_col = wgt_grp.apply(
@@ -66,7 +70,7 @@ def weight_distr(df, mode):
         wgt_grp = wgt_grp.assign(round_weight=round_col.values)
         wgt_grp_sum = wgt_grp.groupby("round_weight")["subjid"].count().reset_index()
         plt.rcParams["figure.figsize"] = [7, 5]
-        wgt_grp_sum_plot = plt.bar(wgt_grp_sum["round_weight"], wgt_grp_sum["subjid"])
+        plt.bar(wgt_grp_sum["round_weight"], wgt_grp_sum["subjid"])
         # Assure there is some breadth to the x-axis in case of just a few observations
         if wgt_grp["measurement"].max() - wgt_grp["measurement"].min() < 10:
             plt.xlim(wgt_grp["measurement"].min() - 5, wgt_grp["measurement"].max() + 5)
@@ -78,11 +82,13 @@ def weight_distr(df, mode):
 
 def make_age_charts(df, mode):
     """
-    Creates a chart with the age ranges in the dataset. Counts the number of subjids in each range.
+    Creates a chart with the age ranges in the dataset. Counts the number of subjids in
+    each range.
 
     Parameters:
-    df: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
-        category, colors, patterns, and sort_order columns
+    df: (DataFrame) with subjid, param, measurement, ageyears, agedays, sex,
+        clean_value, clean_cat, include, category, colors, patterns, and
+        sort_order columns
     mode: (str) indicates whether you want the adults or pediatrics values.
     """
     obs_grp = df
@@ -94,8 +100,8 @@ def make_age_charts(df, mode):
     else:
         raise Exception("Valid modes are 'adults' and 'pediatrics'")
 
-    # Adds label, color, pattern and sort order columns to the dataframe based on the age of each
-    # row in the dataframe
+    # Adds label, color, pattern and sort order columns to the dataframe based on the
+    # age of each row in the dataframe
     def add_categories_to_frame(df_data, df_reference):
         categories = []
         colors = []
@@ -105,7 +111,7 @@ def make_age_charts(df, mode):
             for i in range(len(df_reference)):
                 minVal = df_reference["min"][i]
                 maxVal = df_reference["max"][i]
-                if df_data["age"][j] >= minVal and df_data["age"][j] < maxVal:
+                if df_data["ageyears"][j] >= minVal and df_data["ageyears"][j] < maxVal:
                     categories.append(df_reference["label"][i])
                     colors.append(df_reference["color"][i])
                     patterns.append(df_reference["symbol"][i])
@@ -119,8 +125,8 @@ def make_age_charts(df, mode):
     # Call the categorizing function on the data
     obs_grp = add_categories_to_frame(obs_grp, label_frame)
 
-    # Groups the new dataframe by category, sort order, colors and patterns. It then counts the
-    # number of subject ids in each group and sorts the values by sort order.
+    # Groups the new dataframe by category, sort order, colors and patterns. It then
+    # counts the number of subject ids in each group and sorts the values by sort order.
     obs_grp = (
         obs_grp.groupby(["category", "sort_order", "colors", "patterns"])["subjid"]
         .count()
@@ -162,19 +168,22 @@ def overlap_view_adults(
     ht_df,
 ):
     """
-    Creates a chart showing the trajectory for an individual with all values present. All values will
-    be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
-    shows the resulting trajectory when excluded values are removed.
+    Creates a chart showing the trajectory for an individual with all values
+    present. All values will be plotted with a blue line. Excluded values will
+    be represented by a red x. A yellow dashed line shows the resulting
+    trajectory when excluded values are removed.
 
     Parameters:
-    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value
+        columns
     subjid: (str) Id of the individuals to be plotted
-    param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
-    include_carry_forward: (bool) If True, it will show carry forward values as a triangle and the
-                           yellow dashed line will include carry forward values. If False, carry
-                           forwards are excluded and will be shown as red x's.
-    include_percentiles: (bool) Controls whether the 5th and 95th percentile bands are displayed
-                         on the chart
+    param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or
+        "WEIGHTKG"
+    include_carry_forward: (bool) If True, it will show carry forward values as
+        a triangle and the yellow dashed line will include carry forward values. If
+        False, carry forwards are excluded and will be shown as red x's.
+    include_percentiles: (bool) Controls whether the 5th and 95th percentile
+        bands are displayed on the chart
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     bmi_df: (DataFrame) with the CDC growth charts by age for bmi
     ht_df: (DataFrame) with the CDC growth charts by age for height
@@ -193,10 +202,10 @@ def overlap_view_adults(
     included_selected_param = selected_param[filter_excl]
     plt.rcParams["figure.figsize"] = [6, 4]
     selected_param_plot = selected_param.plot.line(
-        x="age", y="measurement", label="All Measurements", lw=3
+        x="ageyears", y="measurement", label="All Measurements", lw=3
     )
     selected_param_plot.plot(
-        included_selected_param["age"],
+        included_selected_param["ageyears"],
         included_selected_param["measurement"],
         c="y",
         linestyle="-.",
@@ -205,23 +214,23 @@ def overlap_view_adults(
         label="Included Only",
     )
     selected_param_plot.scatter(
-        x=excluded_selected_param.age,
+        x=excluded_selected_param.ageyears,
         y=excluded_selected_param.measurement,
         c="r",
         marker="x",
         zorder=3,
     )
-    xmin = math.floor(individual.age.min())
-    xmax = math.ceil(individual.age.max())
+    xmin = math.floor(individual.ageyears.min())
+    xmax = math.ceil(individual.ageyears.max())
     selected_param_plot.set_xlim(xmin, xmax)
-    if include_carry_forward == True:
+    if include_carry_forward is True:
         carry_forward = selected_param[
             selected_param.clean_value == "Exclude-Carried-Forward"
         ]
         selected_param_plot.scatter(
-            x=carry_forward.age, y=carry_forward.measurement, c="c", marker="^"
+            x=carry_forward.ageyears, y=carry_forward.measurement, c="c", marker="^"
         )
-    if include_percentiles == True:
+    if include_percentiles is True:
         if param == "WEIGHTKG":
             percentile_df = wt_df
         elif param == "BMI":
@@ -287,7 +296,7 @@ def overlap_view_adults_show(
     """
     Wraps overlap_view_adult with plt.show().
     """
-    plot = overlap_view_adults(
+    overlap_view_adults(
         obs_df,
         subjid,
         param,
@@ -301,22 +310,31 @@ def overlap_view_adults_show(
 
 
 def overlap_view_pediatrics(
-    obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df
+    obs_df,
+    subjid,
+    param,
+    include_carry_forward,
+    include_percentiles,
+    wt_df=None,
+    ht_df=None,
 ):
     """
-    Creates a chart showing the trajectory for an individual with all values present. All values will
-    be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
-    shows the resulting trajectory when excluded values are removed.
+    Creates a chart showing the trajectory for an individual with all values
+    present. All values will be plotted with a blue line. Excluded values will
+    be represented by a red x. A yellow dashed line shows the resulting
+    trajectory when excluded values are removed.
 
     Parameters:
-    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and
+        clean_value columns
     subjid: (str) Id of the individuals to be plotted
-    param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
-    include_carry_forward: (bool) If True, it will show carry forward values as a triangle and the
-                           yellow dashed line will include carry forward values. If False, carry
-                           forwards are excluded and will be shown as red x's.
-    include_percentiles: (bool) Controls whether the 5th and 95th percentile bands are displayed
-                         on the chart
+    param: (str) Whether to plot heights or weights. Expected values are
+        "HEIGHTCM" or "WEIGHTKG"
+    include_carry_forward: (bool) If True, it will show carry forward values as
+        a triangle and the yellow dashed line will include carry forward values.
+        If False, carry forwards are excluded and will be shown as red x's.
+    include_percentiles: (bool) Controls whether the 5th and 95th percentile
+    bands are displayed on the chart
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     ht_df: (DataFrame) with the CDC growth charts by age for height
 
@@ -332,32 +350,33 @@ def overlap_view_pediatrics(
     )
     excluded_selected_param = selected_param[~filter_excl]
     included_selected_param = selected_param[filter_excl]
-    selected_param_plot = selected_param.plot.line(x="age", y="measurement")
+    selected_param_plot = selected_param.plot.line(x="ageyears", y="measurement")
     selected_param_plot.plot(
-        included_selected_param["age"],
+        included_selected_param["ageyears"],
         included_selected_param["measurement"],
         c="y",
         linestyle="-.",
     )
     selected_param_plot.scatter(
-        x=excluded_selected_param.age,
+        x=excluded_selected_param.ageyears,
         y=excluded_selected_param.measurement,
         c="r",
         marker="x",
     )
-    if include_carry_forward == True:
+    if include_carry_forward is True:
         carry_forward = selected_param[
             selected_param.clean_value == "Exclude-Carried-Forward"
         ]
         selected_param_plot.scatter(
-            x=carry_forward.age, y=carry_forward.measurement, c="c", marker="^"
+            x=carry_forward.ageyears, y=carry_forward.measurement, c="c", marker="^"
         )
-    if include_percentiles == True:
+    if include_percentiles is True:
         percentile_df = wt_df if param == "WEIGHTKG" else ht_df
+
         percentile_window = percentile_df.loc[
             (percentile_df.Sex == individual.sex.min())
-            & (percentile_df.age > individual.age.min())
-            & (percentile_df.age < individual.age.max())
+            & (percentile_df.age > individual.ageyears.min())
+            & (percentile_df.age < individual.ageyears.max())
         ]
         selected_param_plot.plot(
             percentile_window.age, percentile_window.P5, color="k", zorder=1
@@ -369,12 +388,18 @@ def overlap_view_pediatrics(
 
 
 def overlap_view_pediatrics_show(
-    obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df
+    obs_df,
+    subjid,
+    param,
+    include_carry_forward,
+    include_percentiles,
+    wt_df=None,
+    ht_df=None,
 ):
     """
     Wraps overlap_view_pediatrics with plt.show().
     """
-    plot = overlap_view_pediatrics(
+    overlap_view_pediatrics(
         obs_df, subjid, param, include_carry_forward, include_percentiles, wt_df, ht_df
     )
     plt.show()
@@ -392,21 +417,23 @@ def overlap_view_double_pediatrics(
     ht_df,
 ):
     """
-    Creates a chart showing the trajectory for an individual with all values present. All values will
-    be plotted with a blue line. Excluded values will be represented by a red x. A yellow dashed line
-    shows the resulting trajectory when excluded values are removed.
+    Creates a chart showing the trajectory for an individual with all values present.
+    All values will be plotted with a blue line. Excluded values will be represented by
+    a red x. A yellow dashed line shows the resulting trajectory when excluded
+    values are removed.
 
     Parameters:
-    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value columns
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value
+        columns
     subjid: (str) Id of the individuals to be plotted
     show_all_measurements: (bool) indicates whether to show all measurements
     show_excluded_values: (bool) indicates whether to show the excluded values
     show_trajectory_with_exclusions: (bool) indicates whether to show the trajectory
-    include_carry_forward: (bool) If True, it will show carry forward values as a triangle and the
-                           yellow dashed line will include carry forward values. If False, carry
-                           forwards are excluded and will be shown as red x's.
+    include_carry_forward: (bool) If True, it will show carry forward values as a
+        triangle and the yellow dashed line will include carry forward values.
+        If False, carry forwards are excluded and will be shown as red x's.
     include_percentiles: (bool) Controls whether the percentile bands are displayed
-                         on the chart
+        on the chart
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     ht_df: (DataFrame) with the CDC growth charts by age for height
     """
@@ -431,18 +458,49 @@ def overlap_view_double_pediatrics(
     fig, ax1 = plt.subplots()
     color = "tab:red"
     color_secondary = "tab:blue"
-    ax1.set_ylim([50, 180])
-    ax1.set_xlim([2, 20])
+
+    # Allow zooming in a bit if this is a young subject
+    maxage = individual["ageyears"].max()
+    if maxage < 10:
+        ax1_xlim = [0, maxage * 1.1]
+        # Find stature at P95 for maxage
+        pct_max = round(
+            ht_df.loc[
+                (ht_df.Sex == individual.sex.min()) & (ht_df.age <= np.ceil(maxage))
+            ]["P97"].max()
+        )
+        # round up to nearest 20 tick
+        rounded_max = pct_max + 20 - (pct_max % 20)
+        ax1_ylim = [40, rounded_max]
+    else:
+        ax1_xlim = [0, 20]
+        ax1_ylim = [40, 180]
+    ax1.set_xlim(ax1_xlim)
+    ax1.set_ylim(ax1_ylim)
     ax1.set_xlabel("age (years)")
     ax1.set_ylabel("stature (cm)", color=color)
 
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
-    ax2.set_ylim([0, 160])
+    # Adjust y-axis for weight also to use chart space well
+    if maxage < 10:
+        # Find weight at P97 for maxage
+        pct_max = round(
+            wt_df.loc[
+                (wt_df.Sex == individual.sex.min()) & (wt_df.age <= np.ceil(maxage))
+            ]["P97"].max()
+        )
+        # bump to 2 x rounded up to nearest 10 tick to keep weight under height
+        rounded_max = 2 * (pct_max + 10 - (pct_max % 10))
+        ax2_ylim = [0, rounded_max]
+    else:
+        ax2_ylim = [0, 160]
+    ax2.set_ylim(ax2_ylim)
     ax2.set_ylabel(
         "weight (kg)", color=color_secondary
     )  # we already handled the x-label with ax1
-    if include_percentiles == True:
+
+    if include_percentiles is True:
         percentile_window = wt_df.loc[wt_df.Sex == individual.sex.min()]
         ax2.plot(percentile_window.age, percentile_window.P5, color="lightblue")
         ax2.plot(
@@ -476,29 +534,35 @@ def overlap_view_double_pediatrics(
         )
         ax1.plot(percentile_window_ht.age, percentile_window_ht.P95, color="pink")
 
-    if show_all_measurements == True:
-        ax1.plot(height["age"], height["measurement"], color=color, label="stature")
+    if show_all_measurements is True:
+        # ax1.plot(height["age"], height["measurement"], color=color, label="stature")
+        ax1.plot(
+            height["ageyears"], height["measurement"], color=color, label="stature"
+        )
         ax2.plot(
-            weight["age"], weight["measurement"], color=color_secondary, label="weight"
+            weight["ageyears"],
+            weight["measurement"],
+            color=color_secondary,
+            label="weight",
         )
 
-    if show_excluded_values == True:
+    if show_excluded_values is True:
         ax1.scatter(
-            excluded_height.age, excluded_height.measurement, c="black", marker="x"
+            excluded_height.ageyears, excluded_height.measurement, c="black", marker="x"
         )
         ax2.scatter(
-            excluded_weight.age, excluded_weight.measurement, c="black", marker="x"
+            excluded_weight.ageyears, excluded_weight.measurement, c="black", marker="x"
         )
 
-    if show_trajectory_with_exclusions == True:
+    if show_trajectory_with_exclusions is True:
         ax1.plot(
-            included_height["age"],
+            included_height["ageyears"],
             included_height["measurement"],
             c="y",
             linestyle="-.",
         )
         ax2.plot(
-            included_weight["age"],
+            included_weight["ageyears"],
             included_weight["measurement"],
             c="y",
             linestyle="-.",
@@ -509,17 +573,17 @@ def overlap_view_double_pediatrics(
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
 
-    if include_carry_forward == True:
+    if include_carry_forward is True:
         carry_forward_height = height[height.clean_value == "Exclude-Carried-Forward"]
         carry_forward_weight = weight[weight.clean_value == "Exclude-Carried-Forward"]
         ax1.scatter(
-            x=carry_forward_height.age,
+            x=carry_forward_height.ageyears,
             y=carry_forward_height.measurement,
             c="c",
             marker="^",
         )
         ax2.scatter(
-            x=carry_forward_weight.age,
+            x=carry_forward_weight.ageyears,
             y=carry_forward_weight.measurement,
             c="c",
             marker="^",
@@ -532,21 +596,22 @@ def overlap_view_double_pediatrics(
 
 def mult_obs(obs):
     """
-    Removes individuals from consideration for five_by_five_view() charts that only have one
-    observation in the data
+    Removes individuals from consideration for five_by_five_view() charts that
+    only have one observation in the data
 
     Parameters:
-    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat, include,
-        category, colors, patterns, and sort_order columns
+    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value,
+        clean_cat, include, category, colors, patterns, and sort_order columns
 
     Returns:
-    Dataframe where the individuals that only have one observation in the data are removed
+    Dataframe where the individuals that only have one observation in the data
+        are removed
     """
-    obs["cat_count"] = obs.groupby(["subjid", "param"])["age"].transform("count")
+    obs["cat_count"] = obs.groupby(["subjid", "param"])["ageyears"].transform("count")
     obs["one_rec"] = np.where(obs["cat_count"] == 1, 1, 0)
     obs["any_ones"] = obs.groupby(["subjid"])["one_rec"].transform("max")
-    obs["max"] = obs.groupby("subjid")["age"].transform("max")
-    obs["min"] = obs.groupby("subjid")["age"].transform("min")
+    obs["max"] = obs.groupby("subjid")["ageyears"].transform("max")
+    obs["min"] = obs.groupby("subjid")["ageyears"].transform("min")
     obs["range"] = np.ceil(obs["max"]) - np.floor(obs["min"])
     return obs[obs["any_ones"] == 0]
 
@@ -576,7 +641,8 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
     Parameters:
     obs_df: (DataFrame) with subjid, measurement, param and clean_value columns
     subjids: (list) A list of the ids of the individuals to be plotted
-    param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
+    param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or
+        "WEIGHTKG"
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     ht_df: (DataFrame) with the CDC growth charts by age for height
     bmi_df: (DataFrame) with the CDC growth charts by age for bmi
@@ -594,7 +660,7 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
         for x in range(nrows):
             try:
                 subjid = subjids[x * 5 + y]
-            except IndexError as ie:
+            except IndexError:
                 # No more subjects to render
                 break
             individual = obs_df[obs_df.subjid == subjid]
@@ -606,12 +672,12 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
                 tgt = ax
             else:
                 tgt = ax[y]
-            tgt.plot(selected_param.age, selected_param.measurement, marker=".")
+            tgt.plot(selected_param.ageyears, selected_param.measurement, marker=".")
             excluded_selected_param = selected_param[
                 selected_param.clean_value != "Include"
             ]
             tgt.scatter(
-                excluded_selected_param.age,
+                excluded_selected_param.ageyears,
                 excluded_selected_param.measurement,
                 c="r",
                 marker="x",
@@ -624,8 +690,8 @@ def five_by_five_view(obs_df, subjids, param, wt_df, ht_df, bmi_df, linestyle):
                 percentile_df = ht_df
             percentile_window = percentile_df.loc[
                 (percentile_df.Sex == individual.sex.min())
-                & (percentile_df.age >= math.floor(individual.age.min()))
-                & (percentile_df.age <= math.ceil(individual.age.max()))
+                & (percentile_df.age >= math.floor(individual.ageyears.min()))
+                & (percentile_df.age <= math.ceil(individual.ageyears.max()))
             ]
             tgt.plot(
                 percentile_window.age,
@@ -663,10 +729,10 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
     fig, ax = plt.subplots(1, 2)
     percentile_window = bmi_percentiles.loc[
         (bmi_percentiles.Sex == individual.sex.min())
-        & (bmi_percentiles.age > individual.age.min())
-        & (bmi_percentiles.age < individual.age.max())
+        & (bmi_percentiles.age > individual.ageyears.min())
+        & (bmi_percentiles.age < individual.ageyears.max())
     ]
-    ax[0].plot(individual.age, individual.bmi)
+    ax[0].plot(individual.ageyears, individual.bmi)
     ax[0].plot(percentile_window.age, percentile_window.P5, color="k")
     ax[0].plot(percentile_window.age, percentile_window.P95, color="k")
 
@@ -674,7 +740,7 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
     ax[0].grid()
 
     ax[1].plot(
-        individual[individual.include_height & individual.include_weight].age,
+        individual[individual.include_height & individual.include_weight].ageyears,
         individual.loc[individual.include_height & individual.include_weight].bmi,
     )
     ax[1].plot(percentile_window.age, percentile_window.P5, color="k")
@@ -687,13 +753,15 @@ def bmi_with_percentiles(merged_df, bmi_percentiles, subjid):
 
 def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
     """
-    A version of bmi_with_percentiles() that provides the option of looking at wt or ht as well
+    A version of bmi_with_percentiles() that provides the option of looking at wt or ht
+    as well
 
     Parameters:
     merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
-               and sex columns
+       and sex columns
     subjids: (list) A list of the ids of the individuals to be plotted
-    param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or "WEIGHTKG"
+    param: (str) Whether to plot heights or weights. Expected values are "HEIGHTCM" or
+        "WEIGHTKG"
     wt_df: (DataFrame) with the CDC growth charts by age for weight
     ht_df: (DataFrame) with the CDC growth charts by age for height
     bmi_df: (DataFrame) with the CDC growth charts by age for bmi
@@ -708,10 +776,10 @@ def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
         percentile_df = ht_df
     percentile_window = percentile_df.loc[
         (percentile_df.Sex == individual.sex.min())
-        & (percentile_df.age > individual.age.min())
-        & (percentile_df.age < individual.age.max())
+        & (percentile_df.age > individual.ageyears.min())
+        & (percentile_df.age < individual.ageyears.max())
     ]
-    ax[0].plot(individual.age, individual.measurement)
+    ax[0].plot(individual.ageyears, individual.measurement)
     ax[0].plot(percentile_window.age, percentile_window.P5, color="k")
     ax[0].plot(percentile_window.age, percentile_window.P95, color="k")
 
@@ -719,7 +787,7 @@ def param_with_percentiles(merged_df, subjid, param, wt_df, ht_df, bmi_df):
     ax[0].grid()
 
     included_individual = individual[individual.clean_cat.isin(["Include"])]
-    ax[1].plot(included_individual.age, included_individual.measurement)
+    ax[1].plot(included_individual.ageyears, included_individual.measurement)
     ax[1].plot(percentile_window.age, percentile_window.P5, color="k")
     ax[1].plot(percentile_window.age, percentile_window.P95, color="k")
 
@@ -742,31 +810,33 @@ def top_ten(
     Displays the top ten records depending on the criteria passed in
 
     Parameters:
-    merged_df: (DataFrame) with subjid, bmi, height, weight, include_height, include_weight,
-        rounded_age and sex columns
+    merged_df: (DataFrame) with subjid, bmi, height, weight, include_height,
+        include_weight, rounded_age and sex columns
     field: (str) What field to sort on. Expected values are "height", "weight" and "bmi"
     age: (list) Two elements containing the minimum and maximum ages that should be
          included in the statistics. None if no age filtering desired.
     sex: (int) 1 - Female, 0 - Male, None - no sex filtering
-    wexclusion: (list) of weight exclusions to filter on. None - no weight exclusion filtering
-    hexclusion: (list) of height exclusions to filter on. None - no height exclusion filtering
+    wexclusion: (list) of weight exclusions to filter on. None - no weight exclusion
+        filtering
+    hexclusion: (list) of height exclusions to filter on. None - no height exclusion
+        filtering
     order: (str) Sort order - Expected values are "smallest" and "largest"
     out: (ipywidgets.Output) displays the results
 
     Returns:
-    If out is None, it will return a DataFrame. If out is provided, results will be displayed
-    in the notebook.
+    If out is None, it will return a DataFrame. If out is provided, results will be
+        displayed in the notebook.
     """
     working_set = merged_df
-    if age != None:
+    if age is not None:
         working_set = working_set.loc[
             working_set.rounded_age.ge(age[0]) & working_set.rounded_age.le(age[1])
         ]
-    if sex != None:
+    if sex is not None:
         working_set = working_set[working_set.sex == sex]
-    if wexclusion != None:
+    if wexclusion is not None:
         working_set = working_set[working_set.weight_cat.isin(wexclusion)]
-    if hexclusion != None:
+    if hexclusion is not None:
         working_set = working_set[working_set.height_cat.isin(hexclusion)]
     # if order == 'largest':
     #   working_set = working_set.nlargest(10, field)
@@ -776,7 +846,7 @@ def top_ten(
         columns=["include_height", "include_weight", "include_both", "rounded_age"]
     )
     working_set["sex"] = working_set.sex.replace(0, "M").replace(1, "F")
-    working_set["age"] = working_set.age.round(decimals=2)
+    working_set["age"] = working_set.ageyears.round(decimals=2)
     working_set["height"] = working_set.height.round(decimals=1)
     working_set["weight"] = working_set.weight.round(decimals=1)
     working_set["weight_cat"] = working_set.weight_cat.str.replace("Exclude-", "")
@@ -793,10 +863,10 @@ def top_ten(
             "weight_cat",
             "wtz",
             "bmi",
-            "BMIz",
+            "bmiz",
         ]
     ]
-    if out == None:
+    if out is None:
         return working_set
     else:
         out.clear_output()

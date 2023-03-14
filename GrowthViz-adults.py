@@ -253,7 +253,7 @@ processdata.exclusion_information(obs)
 mdf = sumstats.add_mzscored_to_merged_df_adults(merged_df, percentiles_wide) 
 mdf['wtz'] = (mdf['weight'] - mdf['Mean_weight'])/mdf['sd_weight']
 mdf['htz'] = (mdf['height'] - mdf['Mean_height'])/mdf['sd_height']
-mdf['BMIz'] = (mdf['bmi'] - mdf['Mean_bmi'])/mdf['sd_bmi']
+mdf['bmiz'] = (mdf['bmi'] - mdf['Mean_bmi'])/mdf['sd_bmi']
 mdf.head()
 
 col_opt = {
@@ -270,7 +270,7 @@ col_def = {
     'weight_cat': { 'width': 80 },
     'wtz': { 'width': 50 },
     'bmi': { 'width': 40 },
-    'BMIz': { 'width': 30 },
+    'bmiz': { 'width': 30 },
 }
 g = qgrid.show_grid(charts.top_ten(mdf, 'weight'), precision=3, column_options=col_opt, column_definitions=col_def)
 ind_out = widgets.Output()
@@ -397,17 +397,22 @@ if len(top_weight_moderate_ewma_ids) >= 25:
 def edge25(obs, category, group, sort_order, param):
     filtered_by_cat = obs[(obs.clean_cat == category) & (obs.param == param)]
     # get list of relevant IDs
-    filtered_sum = filtered_by_cat.groupby('subjid', as_index=False).agg(max_measure=('measurement', 'max'), min_measure=('measurement', 'min'), start_age=('age', 'min'), axis_range=('range', 'mean'))
+    filtered_sum = filtered_by_cat.groupby('subjid', as_index=False).agg(max_measure=('measurement', 'max'), 
+                                                                         min_measure=('measurement', 'min'), 
+                                                                         start_age=('ageyears', 'min'), 
+                                                                         axis_range=('range', 'mean'))
     if group == 'largest':
         filtered_sum = filtered_sum.nlargest(25, 'max_measure')
     else:
         filtered_sum = filtered_sum.nsmallest(25, 'min_measure')
     filtered_sum.sort_values(by=[sort_order, 'subjid'], inplace=True)
-    fig = charts.five_by_five_view(obs, filtered_sum.subjid.values, param, wt_percentiles, ht_percentiles, bmi_percentiles, 'dotted')
+    fig = charts.five_by_five_view(obs, filtered_sum.subjid.values, param, wt_percentiles, ht_percentiles, 
+                                   bmi_percentiles, 'dotted')
     plt.show()
     
-interact(edge25, obs = fixed(obs_wbmi_mult), category = obs.clean_cat.unique(), 
-         group = ['largest', 'smallest'], sort_order = ['max_measure', 'min_measure', 'start_age', 'axis_range'], param = ['WEIGHTKG', 'HEIGHTCM', 'BMI'])
+interact(edge25, obs=fixed(obs_wbmi_mult), category=obs.clean_cat.unique(), 
+         group=['largest', 'smallest'], sort_order=['max_measure', 'min_measure', 'start_age', 'axis_range'], 
+         param=['WEIGHTKG', 'HEIGHTCM', 'BMI']);
 
 
 # # Visualizing Changes in Trajectory
@@ -419,10 +424,11 @@ interact(edge25, obs = fixed(obs_wbmi_mult), category = obs.clean_cat.unique(),
 
 all_ids = obs_wbmi['subjid'].unique()
 val = 2431 if 2431 in all_ids else np.random.choice(all_ids, size=1, replace=False)
-interact(charts.param_with_percentiles, merged_df = fixed(obs_wbmi),
-         subjid = widgets.Dropdown(options=all_ids, value=val,
-                                         description='Subject ID:',disabled=False), 
-         param = ['BMI', 'WEIGHTKG', 'HEIGHTCM'], wt_df = fixed(wt_percentiles), ht_df = fixed(ht_percentiles), bmi_df = fixed(bmi_percentiles))
+interact(charts.param_with_percentiles, merged_df=fixed(obs_wbmi),
+         subjid=widgets.Dropdown(options=all_ids, value=val,
+                                 description='Subject ID:', disabled=False), 
+         param=['BMI', 'WEIGHTKG', 'HEIGHTCM'], wt_df=fixed(wt_percentiles), 
+         ht_df=fixed(ht_percentiles), bmi_df=fixed(bmi_percentiles));
 
 
 # # Summary Statistics
