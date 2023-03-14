@@ -319,12 +319,6 @@ interactive(charts.overlap_view_adults_show, obs_df=fixed(obs_wbmi),
 # In[ ]:
 
 
-obs_wbmi[obs_wbmi['subjid'] == 2868]
-
-
-# In[ ]:
-
-
 @interact(subjid=widgets.Dropdown(options=all_ids, value=val, description='Subject ID:', disabled=False))
 def all_charts(subjid=val):
     charts.overlap_view_adults(obs_df=obs_wbmi, subjid=subjid, param='WEIGHTKG', include_carry_forward=True, 
