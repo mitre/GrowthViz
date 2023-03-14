@@ -71,8 +71,8 @@ different software languages and packages:
 
 - Data analysis is performed using [NumPy](https://numpy.org/) and
   [Pandas](https://pandas.pydata.org/). The output of growthcleanr will be
-  loaded into a [pandas
-  DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html).
+  loaded into a
+  [pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html).
   GrowthViz provides functions for transforming DataFrames to support
   calculation of some values, such as BMI, as well as supporting visualizations.
   It is expected that users will create views into or copies of the DataFrames
@@ -91,12 +91,12 @@ to run and view GrowthViz.
 
 1. Install Anaconda
 
-- Follow install instructions [found here for
-  installation.](https://docs.anaconda.com/anaconda/install/)
+- Follow install instructions
+  [found here for installation.](https://docs.anaconda.com/anaconda/install/)
 - Opt for the Python 3.7 version
-- The [windows install
-  instructions](https://docs.anaconda.com/anaconda/install/windows/) are
-  step-by-step and will get everything set up properly for the project.
+- The
+  [windows install instructions](https://docs.anaconda.com/anaconda/install/windows/)
+  are step-by-step and will get everything set up properly for the project.
 
 2. Download the [GrowthViz project](https://github.com/mitre/GrowthViz) as a zip
    file using the "Clone or download" button on GitHub.
@@ -104,8 +104,8 @@ to run and view GrowthViz.
 3. Unzip the GrowthViz zip file to have access to all of the source files for
    the Jupyter notebook.
 
-4. Run the Anaconda Navigator that was installed during Step 1 (go to
-   Start > Anaconda Navigator). This may take a while to load.
+4. Run the Anaconda Navigator that was installed during Step 1 (go to Start >
+   Anaconda Navigator). This may take a while to load.
 
 5. Before Launching the Jupyter Notebook application (shown on the home page),
    download one additional dependency "Qgrid". To do this:
@@ -145,7 +145,8 @@ to run and view GrowthViz.
    OR click the 'Cell' dropdown in the menu bar and select 'Run all' to test the
    entire notebook all at once.
 
-If not using Anaconda, specific versions of packages can be found in `requirements.txt`.
+If not using Anaconda, specific versions of packages can be found in
+`requirements.txt`.
 
 ## Sample data and first run testing
 
@@ -153,8 +154,8 @@ By default when you reach Step 6 of the [Simple Install](#simple-install)
 instructions above the notebook will use sample data loaded from the `.csv`
 files located in the GrowthViz project. This is the same synthetic sample data
 that is packaged with
-[growthcleanr](https://github.com/carriedaymont/growthcleanr), cleaned and
-then separated into pediatric and adult sets for GrowthViz.
+[growthcleanr](https://github.com/carriedaymont/growthcleanr), cleaned and then
+separated into pediatric and adult sets for GrowthViz.
 
 To ensure that all of the necessary example files are present, run the
 `check_setup.py` script.
@@ -163,22 +164,44 @@ To ensure that all of the necessary example files are present, run the
 
 Docker allows for the ability to download GrowthViz and its dependencies in an
 environment. To use this method,
-[download and install Docker Desktop](https://www.docker.com/products/docker-desktop)
+[download and install Docker Desktop](https://www.docker.com/products/docker-desktop).
+It also requires a GitHub account and a GitHub (personal access
+token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
 
-1. Download GrowthViz-Docker with the following command:
+1. Log in to GitHub (create an account if required).
 
-- `docker run -it -p 8888:8888 -v [data-path]/growthviz-data:/usr/src/app/growthviz-data mitre/growthviz`
+2. In GitHub, create a
+   [fine-grained personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token).
+   Note that these have an expiration date with a configurable term; you may
+   have to regenerate this token.
+
+3. Copy the token value and store it somewhere safe on your local machine.
+
+4. On the command line, log in to GitHub's container registry:
+
+```bash
+docker login ghcr.io --username [your-GitHub-username]
+```
+
+5. At the `Password:` prompt, paste in your token value (created in step 2).
+
+6. Download and run GrowthViz-Docker with the following command. This may take
+   several minutes to download components, especially the first time.
+
+```bash
+docker run -it -p 8888:8888 -v [data-path]/growthviz-data:/usr/src/app/growthviz-data ghcr.io/mitre/growthviz/mitre/growthviz
+```
 
 - Replace the `[data-path]` with a directory path you choose on your local
-  computer. For instance, choose: `~/Documents` which means that a folder
-  named `/growthviz-data` will be created in the Documents folder. To
-  input data into GrowthViz, add CSV files in this `/growthviz-data` folder.
+  computer. For instance, choose: `~/Documents` which means that a folder named
+  `/growthviz-data` will be created in the Documents folder. To input data into
+  GrowthViz, add CSV files in this `/growthviz-data` folder.
 
 - Note also that when mapping a folder on Windows, you may be prompted to
   confirm that you indeed want to "Share" the folder. This is a standard Windows
   security practice, and it is okay to confirm and proceed.
 
-2. View GrowthViz
+7. View GrowthViz
 
 - After running the above command, several lines of text will appear. Choose the
   third URL in this text and navigate to it in a web browser.
@@ -188,7 +211,7 @@ environment. To use this method,
 - Within the browser, click on the file `GrowthViz.ipynb`. This will open a new
   window with the GrowthViz Jupyter Notebook.
 
-3. Run GrowthViz
+8. Run GrowthViz
 
 - You can choose to either click the `Run` button to step through the various
   blocks (cells) of the document, OR click the 'Cell' dropdown in the menu bar
@@ -196,18 +219,24 @@ environment. To use this method,
   will run with the default sample data. Step 4 will explain how to use your own
   data.
 
-4. Input Your Own Dataset CSVs
+9. Input Your Own Dataset CSVs
 
 - To input your own data, drop a file `[name-of-your-file.csv]` into the
   `/growthviz-data` folder you created in step 1.
 
 - Then, navigate to Cells 7 and 28 and replace:
 
-- `cleaned_obs = pd.read_csv("sample-data-cleaned.csv")` with
+```python
+cleaned_obs = pd.read_csv("sample-data-cleaned.csv")
+```
 
-- `cleaned_obs = pd.read_csv("growthviz-data/[name-of-your-file.csv]")`
+...with:
 
-- Where [name-of-your-file.csv] is the input CSV file you placed in your
+```python
+cleaned_obs = pd.read_csv("growthviz-data/[name-of-your-file.csv]")
+```
+
+- Where `[name-of-your-file.csv]` is the input CSV file you placed in your
   `/growthviz-data` folder.
 
 #### Output boxes
@@ -220,6 +249,6 @@ charts and graphs used to explore the growthcleanr data. Descriptions of each
 
 ## Notice
 
-Copyright 2020-2021 The MITRE Corporation.
+Copyright &copy; 2020-2022 The MITRE Corporation.
 
 Approved for Public Release; Distribution Unlimited. Case Number 19-2008

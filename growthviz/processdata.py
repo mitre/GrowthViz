@@ -1,27 +1,35 @@
-from IPython.display import FileLinks
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
+from IPython.display import FileLinks
 
 
 def setup_individual_obs_df(obs_df):
     """
     Standardizes adults and pediatrics files for clean processing in GrowthViz notebooks
+
+    Parameters:
+    obs_df: (DataFrame) with subjid, sex, age, measurement, param and clean_value
+        columns
+
+    Returns:
+    DataFrame with updated columns
     """
     df = obs_df.copy()
     df.rename(columns={"clean_res": "clean_value"}, inplace=True)
-    df["age"] = df["agedays"] / 365.25
-    df.drop(columns=["agedays"], inplace=True)
+    df["ageyears"] = df["agedays"] / 365.25
     df["clean_cat"] = df["clean_value"].astype("category")
     df["include"] = df.clean_value.eq("Include")
     col_list = [
         "id",
         "subjid",
+        "agedays",
+        "ageyears",
+        "sex",
         "param",
         "measurement",
-        "age",
-        "sex",
         "clean_value",
         "clean_cat",
         "include",
@@ -32,6 +40,12 @@ def setup_individual_obs_df(obs_df):
 def setup_percentiles_adults(percentiles):
     """
     Processes adults percentiles from CDC
+
+    Parameters:
+    percentiles: (str) CDC Growth Chart Percentile Data File
+
+    Returns:
+    DataFrame with adult percentiles
     """
     # expand decade rows into one row per year
     pct = percentiles[
@@ -90,9 +104,105 @@ def setup_percentiles_adults(percentiles):
     return dta
 
 
+def setup_percentiles_pediatrics_new():
+    """
+    Process pediatrics growth data and return one big DataFrames with each of
+    height, weight, and BMI percentiles as well as weighting values to support
+    smoothing z scores for pediatric subjects between 2-4.
+
+    Returns:
+    Combined DataFrame with all (BMI, height, weight) percentiles and weighting
+        values
+    """
+    df_cdc = pd.read_csv(Path("growthviz-data/ext/growthfile_cdc_ext.csv.gz"))
+    df_who = pd.read_csv(Path("growthviz-data/ext/growthfile_who.csv.gz"))
+    df = df_cdc.merge(df_who, on=["agedays", "sex"], how="left")
+
+    # Add weighting columns to support smoothing between 2-4yo
+    df = df.assign(ageyears=lambda r: (r["agedays"] / 365.25))
+    df["cdcweight"] = 0
+    df.loc[df["ageyears"].between(2, 4, inclusive="left"), "cdcweight"] = (
+        df["ageyears"] - 2
+    )
+    df["whoweight"] = 0
+    df.loc[df["ageyears"].between(2, 4, inclusive="left"), "whoweight"] = (
+        4 - df["ageyears"]
+    )
+
+    PERCENTILES = [0.03, 0.05, 0.10, 0.25, 0.50, 0.75, 0.85, 0.90, 0.95, 0.97]
+
+    # Compute percentiles for the full set of vars
+    for s in ["who", "cdc"]:
+        pvars = ["ht", "wt"]
+        if s == "cdc":
+            pvars.append("bmi")
+        for p in pvars:
+            for pct in PERCENTILES:
+                lvar = f"{s}_{p}_l"
+                mvar = f"{s}_{p}_m"
+                svar = f"{s}_{p}_s"
+                tvar = f"{s}_{p}_p{int(pct * 100)}"
+                df.loc[df[lvar] == 0, tvar] = df[mvar] * (df[svar] ** norm.ppf(pct))
+                df.loc[df[lvar] != 0, tvar] = df[mvar] * (
+                    1 + (df[lvar] * df[svar] * norm.ppf(pct))
+                ) ** (1 / df[lvar])
+
+    # Add smoothed percentiles
+    for p in ["ht", "wt"]:
+        for pct in PERCENTILES:
+            cdc_var = f"cdc_{p}_p{int(pct * 100)}"
+            who_var = f"who_{p}_p{int(pct * 100)}"
+            s_var = f"s_{p}_p{int(pct * 100)}"
+            df.loc[df["ageyears"] <= 2, s_var] = df[who_var]
+            df.loc[df["ageyears"].between(2, 4, inclusive="neither"), s_var] = (
+                (df[who_var] * df["whoweight"]) + (df[cdc_var] * df["cdcweight"])
+            ) / 2
+            df.loc[df["ageyears"] >= 4, s_var] = df[cdc_var]
+
+    return df
+
+
+def split_percentiles_pediatrics(df):
+    """
+    Return (height, weight, BMI) percentile DataFrames, with column names
+    aligned to chart var names.
+
+    Parameters:
+    DataFrame produced by setup_percentiles_pediatrics_new()
+
+    Returns:
+    Tuple of (height, weight, BMI) percentile DataFrames with columns renamed
+    """
+    df.rename(columns={"ageyears": "age", "sex": "Sex"}, inplace=True)
+    cols = ["Sex", "agedays", "age"]
+
+    ht_cols = cols.copy()
+    ht_cols.extend([col for col in df.columns if "s_ht_p" in col])
+    df_ht = df[ht_cols]
+    df_ht.columns = [c.replace("s_ht_p", "P") for c in df_ht]
+
+    wt_cols = cols.copy()
+    wt_cols.extend([col for col in df.columns if "s_wt_p" in col])
+    df_wt = df[wt_cols]
+    df_wt.columns = [c.replace("s_wt_p", "P") for c in df_wt]
+
+    bmi_cols = cols.copy()
+    bmi_cols.extend([col for col in df.columns if "s_bmi_p" in col])
+    df_bmi = df[bmi_cols]
+    df_bmi.columns = [c.replace("s_bmi_p", "P") for c in df_bmi]
+
+    return (df_ht, df_wt, df_bmi)
+
+
 def setup_percentiles_pediatrics(percentiles_file):
     """
     Processes pediatrics percentiles from CDC
+
+    Parameters:
+    percentiles: (str) CDC Growth Chart Percentile Data File
+
+    Returns:
+    DataFrame with pediatrics percentiles
     """
     percentiles = pd.read_csv(
         f"growthviz-data/ext/{percentiles_file}",
@@ -117,100 +227,50 @@ def setup_percentiles_pediatrics(percentiles_file):
 
 def keep_age_range(df, mode):
     """
-    Restricts patient data to acceptable age range for notebooks
-    """
-    obs_grp = df
-    # create age buckets for chart
-    def label_excl_grp(row):
-        if mode == "adults":
-            if row["age"] < 18:
-                return "  Below 18 (Exclude)"
-            if (row["age"] >= 18) & (row["age"] < 30):
-                return " 18 to < 30"
-            if (row["age"] >= 30) & (row["age"] < 40):
-                return " 30 to < 40"
-            if (row["age"] >= 40) & (row["age"] < 50):
-                return " 40 to < 50"
-            if (row["age"] >= 50) & (row["age"] < 60):
-                return " 50 to < 60"
-            if (row["age"] >= 60) & (row["age"] <= 65):
-                return " 60 to 65"
-            if (row["age"] > 65) & (row["age"] <= 80):
-                return " > 65 to 80 (Not Recommended)"
-            if row["age"] > 80:
-                return "Above 80 (Exclude)"
-        elif mode == "pediatrics":
-            if row["age"] < 2:
-                return "  Below 2 (Exclude)"
-            if (row["age"] >= 2) & (row["age"] < 5):
-                return " 02 to < 05"
-            if (row["age"] >= 5) & (row["age"] < 8):
-                return " 05 to < 08"
-            if (row["age"] >= 8) & (row["age"] < 11):
-                return " 08 to < 11"
-            if (row["age"] >= 11) & (row["age"] < 14):
-                return " 11 to < 14"
-            if (row["age"] >= 14) & (row["age"] < 17):
-                return " 14 to < 17"
-            if (row["age"] >= 17) & (row["age"] <= 20):
-                return " 17 to 20"
-            if (row["age"] > 20) & (row["age"] <= 25):
-                return " > 20 to 25 (Not Recommended)"
-            if row["age"] > 25:
-                return "Above 25 (Exclude)"
+    Returns specified range of ages in years, removing extraneous columns as well
 
-    label_excl_col = obs_grp.apply(lambda row: label_excl_grp(row), axis=1)
-    obs_grp = obs_grp.assign(cat=label_excl_col.values)
-    obs_grp = (
-        obs_grp.groupby("cat")["subjid"]
-        .count()
-        .reset_index()
-        .sort_values("cat", ascending=True)
-    )
-    # assign bar colors
-    cat_list = obs_grp["cat"].values.tolist()
-    color_list = []
-    patterns = []
-    for n in cat_list:
-        if ("Below" in n) | ("Above" in n):
-            color_list = color_list + ["C3"]
-            patterns = patterns + ["x"]
-        if ("to" in n) & ("Not" not in n):
-            color_list = color_list + ["C0"]
-            patterns = patterns + [""]
-        if "Not" in n:
-            color_list = color_list + ["orange"]
-            patterns = patterns + ["/"]
-    # create chart
-    fig, ax1 = plt.subplots()
-    obs_grp_plot = plt.bar(
-        obs_grp["cat"],
-        obs_grp["subjid"],
-        color=color_list,
-    )
-    for bar, pattern in zip(obs_grp_plot, patterns):
-        bar.set_hatch(pattern)
-    plt.xticks(rotation=45, ha="right")
-    ax1.get_yaxis().set_major_formatter(
-        mpl.ticker.FuncFormatter(lambda x, p: format(int(x), ","))
-    )
-    # return specified age range
+    Parameters:
+    df: (DataFrame) with subjid, param, measurement, ageyears, agedays, sex,
+        clean_value, and include columns
+    mode: (str) indicates whether you want the "adults" (18-80) or "pediatrics" (0-25)
+        values
+
+    Returns:
+    DataFrame with filtered ages, unchanged if invalid mode is specified
+    """
+    # Note: this is a side effect; just the simplest place to remove these
+    cols_to_drop = []
+    for extra_col in ["category", "colors", "patterns", "sort_order"]:
+        if extra_col in df.columns:
+            cols_to_drop.append(extra_col)
+    df = df.drop(columns=cols_to_drop)
     if mode == "adults":
-        return df[df["age"].between(18, 80, inclusive=True)]
+        return df[df["ageyears"].between(18, 80, inclusive="both")]
     elif mode == "pediatrics":
-        return df[df["age"].between(2, 25, inclusive=True)]
+        return df[df["ageyears"].between(0, 25, inclusive="both")]
+    else:
+        return df
 
 
 def setup_merged_df(obs_df):
     """
     Merges together weight and height data for calculating BMI
+
+    Parameters:
+    obs_df: (DataFrame) with subjid, sex, agedays, ageyears, measurement, param and
+        clean_value columns
+
+    Returns:
+    DataFrame with merged data
     """
     obs_df = obs_df.assign(height=obs_df["measurement"], weight=obs_df["measurement"])
     obs_df.loc[obs_df.param == "WEIGHTKG", "height"] = np.NaN
     obs_df.loc[obs_df.param == "HEIGHTCM", "weight"] = np.NaN
     heights = obs_df[obs_df.param == "HEIGHTCM"]
     weights = obs_df[obs_df.param == "WEIGHTKG"]
-    merged = heights.merge(weights, on=["subjid", "age", "sex"], how="outer")
+    merged = heights.merge(
+        weights, on=["subjid", "agedays", "ageyears", "sex"], how="outer"
+    )
     only_needed_columns = merged.drop(
         columns=[
             "param_x",
@@ -239,7 +299,7 @@ def setup_merged_df(obs_df):
     clean_column_names["bmi"] = clean_column_names["weight"] / (
         (clean_column_names["height"] / 100) ** 2
     )
-    clean_column_names["rounded_age"] = np.around(clean_column_names.age)
+    clean_column_names["rounded_age"] = np.around(clean_column_names.ageyears)
     clean_column_names["include_both"] = (
         clean_column_names["include_height"] & clean_column_names["include_weight"]
     )
@@ -248,7 +308,8 @@ def setup_merged_df(obs_df):
 
 def exclusion_information(obs):
     """
-    Provides a count and percentage of growthcleanr categories by measurement type (param).
+    Provides a count and percentage of growthcleanr categories by measurement type
+    (param).
 
     Parameters:
     obs: a DataFrame, in the format output by setup_individual_obs_df
@@ -280,9 +341,16 @@ def exclusion_information(obs):
 
 def label_incl(row):
     """
-    Categorizes BMI calculations as Include, Implausible, or unable to calculate (Only Wt or Ht)
+    Categorizes BMI calculations as Include, Implausible, or unable to calculate (Only
+    Wt or Ht)
+
+    Parameters:
+    row: (Series) dataframe row
+
+    Returns:
+    Category (str) for BMI calculation
     """
-    if row["include_both"] == True:
+    if row["include_both"] is True:
         return "Include"
     elif (row["weight_cat"] == "Implausible") | (row["height_cat"] == "Implausible"):
         return "Implausible"
@@ -293,13 +361,22 @@ def label_incl(row):
 def setup_bmi_adults(merged_df, obs):
     """
     Appends BMI data onto adults weight and height observations
+
+    Parameters:
+    merged_df: (DataFrame) with subjid, bmi, include_height, include_weight, rounded_age
+               and sex columns
+    obs: (DataFrame) with subjid, param, measurement, age, sex, clean_value, clean_cat,
+        include, category, colors, patterns, and sort_order columns
+
+    Returns:
+    DataFrame with appended values
     """
     data = merged_df[
         [
             "id",
             "subjid",
             "sex",
-            "age",
+            "ageyears",
             "rounded_age",
             "bmi",
             "weight_cat",
@@ -318,6 +395,12 @@ def setup_bmi_adults(merged_df, obs):
 def data_frame_names(da_locals):
     """
     Returns a list of dataframe names
+
+    Parameters:
+    da_locals: (dict) all the local variables
+
+    Returns:
+    list of the dataframe names
     """
     frames = []
     for key, value in da_locals.items():
@@ -330,6 +413,12 @@ def data_frame_names(da_locals):
 def export_to_csv(da_locals, selection_widget, out):
     """
     Saves out csv file of dataframe
+
+    Parameters:
+    da_locals: (dict) all the local variables
+    selection_widget: (Widget) interactive object used
+    out: (Widgets.Outputs) output from widget
+
     """
     df_name = selection_widget.value
     da_locals[df_name].to_csv("output/{}.csv".format(df_name), index=False)
@@ -339,15 +428,17 @@ def export_to_csv(da_locals, selection_widget, out):
 
 def clean_swapped_values(merged_df):
     """
-    This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-    "Swapped-Measurements" (or the adult equivalent). It will then swap the height and weight values
-    for those rows, and recalculate BMIs based on these changes. It will also create two new columns:
-    postprocess_height_cat and postprocess_weight_cat. The values for these columns are copied from
-    the original categories except in the case where swaps are fixed when it is set to
+    This function will look in a DataFrame for rows where the height_cat and weight_cat
+    are set to "Swapped-Measurements" (or the adult equivalent). It will then swap the
+    height and weight values for those rows, and recalculate BMIs based on these
+    changes.  It will also create two new columns: postprocess_height_cat and
+    postprocess_weight_cat. The values for these columns are copied from the original
+    categories except in the case where swaps are fixed when it is set to
     "Include-Fixed-Swap".
 
     Parameters:
-    merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+    merged_df: (DataFrame) with subjid, height, weight, include_height and
+        include_weight columns
 
     Returns:
     The cleaned DataFrame
@@ -383,20 +474,21 @@ def clean_swapped_values(merged_df):
 
 def clean_unit_errors(merged_df):
     """
-    This function will look in a DataFrame for rows where the height_cat and weight_cat are set to
-    "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide the height and weight
-    values to convert them.  It will also create two new columns: postprocess_height_cat and
-    postprocess_weight_cat.  The values for these columns are copied from the original categories
-    except in the case where unit errors are fixed when it is set to "Include-UH" or "Include-UL"
-    respectively.
+    This function will look in a DataFrame for rows where the height_cat and weight_cat
+    are set to "Unit-Error-High" or "Unit-Error-Low". It will then multiply / divide
+    the height and weight values to convert them.  It will also create two new columns:
+    postprocess_height_cat and postprocess_weight_cat.  The values for these columns
+    are copied from the original categories except in the case where unit errors are
+    fixed when it is set to "Include-UH" or "Include-UL" respectively.
 
-    At present, the adult algorithm does not specify high or low unit errors, rather it only flags
-    "Exclude-Adult-Unit-Errors", so this function only works with pediatrics data. If growthcleanr
-    adds high and low designations for adult unit errors, a comparable set of conditions could be
-    added here to accommodate adult data.
+    At present, the adult algorithm does not specify high or low unit errors, rather it
+    only flags "Exclude-Adult-Unit-Errors", so this function only works with pediatrics
+    data. If growthcleanr adds high and low designations for adult unit errors, a
+    comparable set of conditions could be added here to accommodate adult data.
 
     Parameters:
-    merged_df: (DataFrame) with subjid, height, weight, include_height and include_weight columns
+    merged_df: (DataFrame) with subjid, height, weight, include_height and
+        include_weight columns
 
     Returns:
     The cleaned DataFrame
